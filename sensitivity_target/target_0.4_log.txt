@@ -1,0 +1,94 @@
+Optimize a model with 54 rows, 84515 columns and 2112560 nonzeros
+Variable types: 0 continuous, 84515 integer (84515 binary)
+Coefficient statistics:
+  Matrix range     [3e-03, 2e+03]
+  Objective range  [1e+05, 1e+08]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [2e+01, 1e+07]
+Found heuristic solution: objective 6.726013e+09
+Presolve removed 0 rows and 504 columns
+Presolve time: 4.66s
+Presolved: 54 rows, 84011 columns, 2112280 nonzeros
+Variable types: 0 continuous, 84011 integer (84006 binary)
+Presolved: 54 rows, 84011 columns, 2112280 nonzeros
+
+
+Root simplex log...
+
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    0.0000000e+00   2.562461e+06   0.000000e+00      6s
+
+Starting sifting (using dual simplex for sub-problems)...
+
+    Iter     Pivots    Primal Obj      Dual Obj        Time
+       0          0     infinity      0.0000000e+00      6s
+       1         54   8.9353948e+13   5.1640536e+08      6s
+       2        170   8.9330706e+13   6.1207003e+08      6s
+       3        286   8.9284675e+13   6.5565258e+08      6s
+       4        406   8.9257451e+13   6.8587241e+08      6s
+       5        519   8.9223241e+13   7.1383782e+08      6s
+       6        632   8.9194240e+13   7.3318632e+08      6s
+       7        747   8.9180032e+13   7.5975632e+08      6s
+       8        859   8.9152901e+13   8.0456571e+08      6s
+       9        970   8.9117269e+13   8.3850229e+08      6s
+      10       1080   8.9092480e+13   8.5906558e+08      6s
+      11       1188   8.9068498e+13   8.7654689e+08      6s
+      12       1300   8.8455399e+13   9.9318335e+08      6s
+      13       1414   8.7751178e+13   1.1113903e+09      6s
+      14       1529   8.6916468e+13   1.2269687e+09      6s
+      15       1646   8.6143639e+13   1.3500805e+09      6s
+      16       1758   8.5168335e+13   1.4845605e+09      6s
+      17       1878   8.4057887e+13   1.5819925e+09      6s
+      18       2002   8.2889809e+13   1.6499916e+09      6s
+      19       2119   8.1757254e+13   1.7057385e+09      6s
+      20       2227   8.0605312e+13   1.7503324e+09      6s
+      21       2339   7.9480872e+13   1.7914138e+09      6s
+      22       2451   7.8342208e+13   1.8260631e+09      6s
+      23       2565   7.7257818e+13   1.8568589e+09      6s
+      24       2680   7.6146113e+13   1.8754378e+09      6s
+      25       2791   7.5294522e+13   1.8984962e+09      6s
+      26       2905   7.4326198e+13   1.9204459e+09      6s
+      27       3015   7.3341525e+13   1.9346950e+09      6s
+      28       3123   7.2494763e+13   1.9562362e+09      6s
+      29       3241   7.1466724e+13   1.9685617e+09      6s
+      30       3360   7.0607013e+13   1.9843651e+09      6s
+      31       3476   6.9663243e+13   1.9925548e+09      6s
+      32       3596   6.9010816e+13   2.0011060e+09      6s
+      33       3713   6.8321623e+13   2.0150006e+09      6s
+      34       3819   6.7467413e+13   2.0248856e+09      6s
+      35       3925   6.6716434e+13   2.0333962e+09      6s
+      36       4036   6.6011857e+13   2.0424230e+09      6s
+      37       4148   6.5308297e+13   2.0522959e+09      6s
+      38       4258   6.4581316e+13   2.0638960e+09      7s
+      39       4370   6.3716507e+13   2.0776680e+09      7s
+      40       4481   6.2687847e+13   2.0877101e+09      7s
+      41       4592   6.1820650e+13   2.0958510e+09      7s
+      42       4702   6.1063207e+13   2.1050779e+09      7s
+      43       4811   6.0270756e+13   2.1140181e+09      7s
+      44       4918   5.9402900e+13   2.1210140e+09      7s
+      45       5029   5.8677753e+13   2.1268736e+09      7s
+      46       5140   5.8016012e+13   2.1342212e+09      7s
+      47       5253   5.7235374e+13   2.1399171e+09      7s
+      48       5368   5.6598484e+13   2.1489831e+09      7s
+      49       5476   5.5717993e+13   2.1557095e+09      7s
+
+Sifting complete
+
+    5668    3.1995956e+09   0.000000e+00   0.000000e+00      7s
+    5668    3.1995956e+09   0.000000e+00   0.000000e+00      7s
+
+Root relaxation: objective 3.199596e+09, 5668 iterations, 2.16 seconds
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 3.1996e+09    0    9 6.7260e+09 3.1996e+09  52.4%     -    7s
+H    0     0                    3.199672e+09 3.1996e+09  0.00%     -    8s
+
+Explored 1 nodes (5668 simplex iterations) in 8.33 seconds
+Thread count was 1 (of 12 available processors)
+
+Solution count 2: 3.19967e+09 6.72601e+09 
+
+Optimal solution found (tolerance 1.00e-01)
+Best objective 3.199671883828e+09, best bound 3.199595617375e+09, gap 0.0024%
