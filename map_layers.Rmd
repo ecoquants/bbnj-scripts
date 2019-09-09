@@ -131,8 +131,8 @@ names(s_features) <- c(
 dir_png <- here("map_layers")
 redo    <- F
   
-s04_r <- raster(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol.tif"))
-s04_r <- mask(s04_r, s04_r, maskvalue=0)
+s04 <- raster(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol.tif"))
+s04 <- mask(s04, s04, maskvalue=0)
 P
 
 s04_sf <- read_sf(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol_gcs.shp")) %>%
@@ -162,14 +162,14 @@ for (i in 1:nlayers(s_features)){ # i = 1
   map25_png  <- glue("{dir_png}/{lyr}_map25.png")
   hist25_png <- glue("{dir_png}/{lyr}_hist25.png")
   message(glue("{i}/{nlayers(s_features)}: {lyr}"))
-
-  P   <- get_tif_projection(r_tif)
   
   # write raster ----
   if (!file.exists(r_tif)){
     message("  writeRaster")
     writeRaster(r, r_tif)
   }
+  
+  P   <- get_tif_projection(r_tif)
 
   # values ----
   v <- values(r) %>% na.omit() %>% sort(decreasing = T)
@@ -185,6 +185,10 @@ for (i in 1:nlayers(s_features)){ # i = 1
   d_25 <- d %>% 
     filter(v_cumsum <= sum(v)*.25)
   
+  if (nrow(d_25) == 0){
+    d_25 <- d %>% slice(1)
+  }
+    
   v_at25     <- min(d_25$v)
   pcths_at25 <- max(d_25$pct_hsarea)
   title  <- glue("{lyr} — 25%: {round(pcths_at25, digits=2)}% hs >= {signif(v_at25)}")
@@ -253,17 +257,14 @@ for (i in 1:nlayers(s_features)){ # i = 1
          axis.args = list(cex.axis = 0.5))
 
     dev.off()
-<<<<<<< HEAD
     
-=======
->>>>>>> 437587b2ae4e44535f13019b6bad85fa1e435245
     map25_png %>%
       magick::image_read() %>% magick::image_trim() %>%
       magick::image_write(map25_png)
   }
   
   # map ----
-  if (!file.exists(map_png)){
+  if (!file.exists(map_png) | redo){
     message("  map_png")
     png(map_png, width=480*4, height = 480*4, res=300, units='px')
     
