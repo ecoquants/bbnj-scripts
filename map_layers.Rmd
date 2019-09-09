@@ -9,112 +9,140 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
 ```
 
-```{r load layers}
-library(prioritizr) # devtools::load_all("~/github/prioritizr")
-#library(bbnj)       # 
-devtools::load_all() # setwd(here()); devtools::install_local(force=T) 
+```{r libraries}
+library(prioritizr)
+# devtools::load_all()
+# devtools::install_local(force=T)
 # devtools::install_github("ecoquants/bbnj")
+library(bbnj)
 library(raster)
 library(sf)
 library(dplyr)
 library(readr)
-library(ggplot2)
 library(stringr)
 library(glue)
 library(here)
 library(fs)
-library(units)
 library(knitr)
 library(formattable)
 library(lwgeom)
+library(purrr)
+library(ggplot2)
+library(formattable)
+library(knitr)
+library(ggplot2)
+library(plotly)
+library(units)
 library(RColorBrewer)
+
 area   = raster::area
 select = dplyr::select
 
 # set rainbow color palette
-pal  <- colorRampPalette(brewer.pal(11, "Spectral"))
-cols <- rev(pal(255))
+#RColorBrewer::display.brewer.all()
+pal  <- colorRampPalette(brewer.pal(11, "YlOrRd"))
+#pal  <- colorRampPalette(brewer.pal(11, "Reds"))
+#cols <- rev(pal(255))
+cols <- pal(255)
+```
 
-# variables ----
+## Features
+
+Source of features: [`s04a.biofish.alltime.mol50km.Rmd`](https://github.com/ecoquants/bbnj/blob/699727ccbcf78935b0092a6c171af16f3e228120/inst/app/www/scenarios/s04a.biofish.alltime.mol50km.Rmd).
+
+```{r features, eval=F}
+# borrowed from: ~/github/bbnj/inst/app/www/scenarios/
+#                s04a.biofish.alltime.mol50km.Rmd
+
 prjres     <- "_mol50km" # prjres in: View(projections_tbl)
 
 P <- projections_tbl %>% filter(prjres == !!prjres)
 
 # planning unit: ----
-r_pu_id <- get_d_prjres("r_pu_id", prjres) # plot(r_pu_id)
-r_pu <- setValues(r_pu_id, 1) %>% 
-  mask(r_pu_id) # plot(r_pu)
+r_pu_id <- get_d_prjres("r_pu_id", prjres) #plot(r_pu_id)
 
-# input layers ----
-  eez<-get_d_prjres("p_eez_s05","_mol50km") %>% 
-  rasterize(r_pu_id, field=1)
+# r_pu <- setValues(r_pu_id, 1) %>%
+#   mask(r_pu_id) # plot(r_pu)
 
-
-# biodiversity: now, for each taxonomic group ----
-# s_bio_gmbi <- get_gmbi_grpsmdl_prjres("groups02", prjres)
-#   lyrs_bio_now <- names(s_bio_gmbi) %>% 
-#   setdiff(str_subset(names(s_bio_gmbi), "rli")) %>% 
-#   setdiff(str_subset(names(s_bio_gmbi), "rls"))
-# s_bio_now <- subset(s_bio_gmbi, lyrs_bio_now)
-
-s_bio_now_all <- get_gmbi_grpsmdl_prjres("groups00", prjres) %>% 
-  subset("groups00_nspp_all")
-
-s_bio_future_all <- get_gmbi_grpsmdl_prjres("groups00_2100", prjres) %>% 
-  subset("groups00_2100_nspp_all")
-
-rls_all <- get_gmbi_grpsmdl_prjres("groups00", prjres) %>% 
-  subset("groups00_rls_all")
-
-# r_fish_effort_log <- get_d_prjres("s_fish_gfw", prjres)%>%
-#   subset("fishing_KWH") %>% 
-#   rescale_raster(log=T)
-
+# cost layer: fishing profitability ----
 r_fish_effort <- get_d_prjres("s_fish_gfw", prjres)%>%
   subset("fishing_KWH")
+
+# apply cost to planning units
+r_pu <- r_fish_effort %>% 
+  reclassify(rcl=cbind(-Inf, 112774, NA), right=TRUE) %>% 
+  gap_fill_raster(r_mask=r_pu_id)
+
+# biodiversity: now + 2100 ----
+s_bio_gmbi_now <- get_gmbi_grpsmdl_prjres("groups02", prjres)
+lyrs_bio_now <- names(s_bio_gmbi_now) %>% 
+  setdiff(str_subset(names(s_bio_gmbi_now), "rli")) %>% 
+  setdiff(str_subset(names(s_bio_gmbi_now), "rls"))
+s_bio_gmbi_now <- subset(s_bio_gmbi_now, lyrs_bio_now)
+
+s_bio_gmbi_future <- get_gmbi_grpsmdl_prjres("groups02_2100", prjres)
+lyrs_bio_future <- names(s_bio_gmbi_future) %>% 
+  setdiff(str_subset(names(s_bio_gmbi_future), "rli")) %>% 
+  setdiff(str_subset(names(s_bio_gmbi_future), "rls"))
+s_bio_gmbi_future <- subset(s_bio_gmbi_future, lyrs_bio_future)
+
+# rls now + 2100
+rls_all_now <- get_gmbi_grpsmdl_prjres("groups00", prjres) %>% 
+  subset("groups00_rls_all")
+
+rls_all_future <- get_gmbi_grpsmdl_prjres("groups00_2100", prjres) %>% 
+  subset("groups00_2100_rls_all")
 
 # features ----
 s_seamounts <- get_d_prjres("s_phys_seamounts",prjres)
 lu_seamounts <- c(lteq200m="0to200",gt200lteq800m="gt200to800",gt800m="gt800")
 lbls_seamounts <- sprintf("phys_seamounts_%sm", lu_seamounts[names(s_seamounts)])
 
-seamounts_all <- sum(s_seamounts)
-
 s_features <- stack(
   get_d_prjres("r_vgpm", prjres),
-  s_bio_now_all,
-  s_bio_future_all,
-  rls_all,
+  s_bio_gmbi_now,
+  s_bio_gmbi_future,
+  rls_all_now,
+  rls_all_future,
   #raster(s_fish_gfw, "mean_scaled_profits_with_subsidies") %>%
   #    gap_fill_raster(r_mask=r_pu_id) %>%
   #    rescale_raster(inverse=T),
   #raster(s_fish_ubc, "mcp_2004"),
   s_seamounts,
-  seamounts_all,
   get_d_prjres("r_phys_vents",prjres),
   get_d_prjres("r_phys_scapes_hetero",prjres))
 
 names(s_features) <- c(
   "bio_vgpm",
-  "s_bio_now_all",
-  "s_bio_future_all",
-  "rls_all",
+  gsub("^.*?_","",names(s_bio_gmbi_now)),
+  #gsub("^.*?_","",names(s_bio_gmbi_future)),
+  gsub("groups02_2100_nspp","nspp_2100",names(s_bio_gmbi_future)),
+  "rls_all_now",
+  "rls_all_future",
   #"fish_profit.subs"
   #"fish_mcp.2004",
   lbls_seamounts,
-  "seamounts_all",
   "phys_vents",
   "scapes_hetero")
-
 ```
 
 ```{r indiv layers}
-dir_png <- here("inst/scripts/map_layers")
+dir_png <- here("map_layers")
 redo    <- F
   
-summary30pct_csv <- glue("{dir_png}/_summary30pct.csv")
+s04_r <- raster(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol.tif"))
+s04_r <- mask(s04_r, s04_r, maskvalue=0)
+P
 
-cell_km2 <- prod(res(r_pu)) %>% as_units("m2") %>% set_units("km2")
+s04_sf <- read_sf(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol_gcs.shp")) %>%
+  st_transform(P$epsg)
+  
+s04 <- mask(s04, s04, maskvalue=0)
+
+
+summary25pct_csv <- glue("{dir_png}/_summary25pct.csv")
+
+cell_km2   <- prod(res(r_pu)) %>% as_units("m2") %>% set_units("km2")
 hs_ncells  <- length(na.omit(values(r_pu_id)))
 hs_areakm2 <- hs_ncells * cell_km2
 
@@ -131,8 +159,8 @@ for (i in 1:nlayers(s_features)){ # i = 1
   
   r_tif      <- glue("{dir_png}/{lyr}.tif")
   map_png    <- glue("{dir_png}/{lyr}_map.png")
-  map30_png  <- glue("{dir_png}/{lyr}_map30.png")
-  hist30_png <- glue("{dir_png}/{lyr}_hist30.png")
+  map25_png  <- glue("{dir_png}/{lyr}_map25.png")
+  hist25_png <- glue("{dir_png}/{lyr}_hist25.png")
   message(glue("{i}/{nlayers(s_features)}: {lyr}"))
 
   P   <- get_tif_projection(r_tif)
@@ -154,34 +182,34 @@ for (i in 1:nlayers(s_features)){ # i = 1
       pct_totval  = v_cumsum/sum(v) * 100,
       pct_hsarea  = cumarea_km2/hs_areakm2 %>% drop_units() * 100)
   
-  d_30 <- d %>% 
-    filter(v_cumsum <= sum(v)*.3)
+  d_25 <- d %>% 
+    filter(v_cumsum <= sum(v)*.25)
   
-  v_at30     <- min(d_30$v)
-  pcths_at30 <- max(d_30$pct_hsarea)
-  title  <- glue("{lyr} — 30%: {round(pcths_at30, digits=2)}% hs >= {signif(v_at30)}")
+  v_at25     <- min(d_25$v)
+  pcths_at25 <- max(d_25$pct_hsarea)
+  title  <- glue("{lyr} — 25%: {round(pcths_at25, digits=2)}% hs >= {signif(v_at25)}")
 
   D_i <- tibble(
     lyr        = lyr,
-    v_at30     = v_at30,
-    pcths_at30 = pcths_at30)
+    v_at25     = v_at25,
+    pcths_at25 = pcths_at25)
   
-  if (!file.exists(summary30pct_csv)){
-    write_csv(D_i, summary30pct_csv)
+  if (!file.exists(summary25pct_csv)){
+    write_csv(D_i, summary25pct_csv)
   } else {
-    read_csv(summary30pct_csv) %>% 
+    read_csv(summary25pct_csv) %>% 
       filter(lyr != !!lyr) %>% 
       bind_rows(D_i) %>% 
-      write_csv(summary30pct_csv)
+      write_csv(summary25pct_csv)
   }
   
   # hist ----
-  if (!file.exists(hist30_png) | redo){
-    message("  hist30_png")
-    #png(hist30_png, width=480*4, height = 480*4, res=300, units='px')
+  if (!file.exists(hist25_png) | redo){
+    message("  hist25_png")
+    #png(hist25_png, width=480*4, height = 480*4, res=300, units='px')
     p <- ggplot(d, aes(x=pct_hsarea, y=pct_totval)) + 
       geom_area(fill="gray70", color=NA) + 
-      geom_area(data=d_30, aes(x=pct_hsarea, y=pct_totval), fill="gray10", color=NA) + 
+      geom_area(data=d_25, aes(x=pct_hsarea, y=pct_totval), fill="gray10", color=NA) + 
       scale_fill_distiller("spectral") +
       theme_light() + 
       coord_cartesian(expand = F) +
@@ -192,28 +220,43 @@ for (i in 1:nlayers(s_features)){ # i = 1
         title = title, 
         x="% high seas area", y="% total value")
     ggsave(
-      hist30_png,
+      hist25_png,
       p, 
       "png", width=6.4, height=6.4, dpi=300, units='in')
     #dev.off()
   }
   
-  # map 30 ----
-  if (!file.exists(map30_png)){
-    message("  map30_png")
-    png(map30_png, width=480*4, height = 480*4, res=300, units='px')
+  # map 25 ----
+  if (!file.exists(map25_png)){
+    message("  map25_png")
+
+    r_v   <- mask(r, r >= v_at25, maskvalue=0)
+    v_rng <- range(values(r), na.rm = T)
+    pct_at25_4cols <- (v_rng[2] - v_at25) / (v_rng[2] - v_rng[1])
     
-    #plot(r)
-    r_v <- mask(r, r >= v_at30, maskvalue=0)
-    plot(r, col = scales::alpha(cols, 0.3), legend=F, axes=F, box=F, main=title)
-    plot(r_v, col = cols, add=T, legend=T)
-    plot(st_geometry(countries), add=T, col=gray(0.8), border=gray(0.7), lwd=0.5)
-    plot(st_geometry(graticules), add=T, col=gray(0.6), lwd=0.5)
+    png(map25_png, width=480*4, height = 480*4, res=300, units='px')
     
+    cols_v <- cols[1:round(length(cols)*pct_at25_4cols)]
+    
+    # simple map
+    plot(r, col = scales::alpha(cols, 0.2), legend=F, axes=F, box=F, 
+         legend.mar = 3.1, legend.shrink = 0.3)
+    plot(r_v, col = cols_v, legend=F, add=T)
+    contour(r, add=T, levels=v_at25, col="red", lwd = 0.5)
+    plot(s04_sf[1], col=scales::alpha("blue", 0.15), border=scales::alpha("blue", 0.25), lwd=0.5, add=T)
+    plot(countries[1], col=gray(0.8), border=gray(0.7), lwd=0.5, add=T)
+    plot(graticules[1], col=gray(0.6), lwd=0.5, add=T)
+    plot(r, col = cols, legend.only=T, #legend.width = 1,
+         legend.shrink = 0.3, legend.mar = 3.1,
+         legend.args = list(text = lyr, side = 3, 
+         font = 2, line = 0.2, cex = 0.5),
+         axis.args = list(cex.axis = 0.5))
+
     dev.off()
-    map30_png %>%
+    
+    map25_png %>%
       magick::image_read() %>% magick::image_trim() %>%
-      magick::image_write(map30_png)
+      magick::image_write(map25_png)
   }
   
   # map ----
@@ -223,6 +266,7 @@ for (i in 1:nlayers(s_features)){ # i = 1
     
     #table(values(r))
     plot(r, col = cols, legend=T, axes=F, box=F, main=lyr)
+    plot(s04, alpha=0.5, legend=F, axes=F, box=F)
     plot(st_geometry(countries), add=T, col=gray(0.8), border=gray(0.7), lwd=0.5)
     plot(st_geometry(graticules), add=T, col=gray(0.6), lwd=0.5)
     
@@ -235,7 +279,7 @@ for (i in 1:nlayers(s_features)){ # i = 1
 ```
 
 
-```{r top 30% layers as simple sum map}
+```{r top 30% layers as simple sum map, eval=F}
 D <- read_csv(summary30pct_csv)
 
 if (exists("s_b")) rm(s_b)
@@ -274,7 +318,7 @@ sol30_map_png %>%
   magick::image_write(sol30_map_png)
 ```
 
-```{r fishing effort}
+```{r fishing effort, eval=F}
 
   r <- r_fish_effort
   lyr <- names(r_fish_effort)
@@ -310,7 +354,7 @@ sol30_map_png %>%
 ```
 
 
-```{r solution & ebsas}
+```{r solution & ebsas, eval=F}
 s04 <- raster(here("inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol.tif"))
 
 ebsa_abnj<-read_sf(here("inst/scripts/data_overlays/ebsa_abnj.shp")) %>% 
@@ -337,7 +381,7 @@ map_png %>%
   magick::image_write(map_png)
 ```
 
-```{r solution polygon ggridges layers}
+```{r solution polygon ggridges layers, eval=F}
 library(tidyr)
 library(scales)
 
