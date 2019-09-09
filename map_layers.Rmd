@@ -39,6 +39,7 @@ area   = raster::area
 select = dplyr::select
 
 # set rainbow color palette
+
 #RColorBrewer::display.brewer.all()
 pal  <- colorRampPalette(brewer.pal(11, "YlOrRd"))
 #pal  <- colorRampPalette(brewer.pal(11, "Reds"))
@@ -139,7 +140,6 @@ s04_sf <- read_sf(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol5
   
 s04 <- mask(s04, s04, maskvalue=0)
 
-
 summary25pct_csv <- glue("{dir_png}/_summary25pct.csv")
 
 cell_km2   <- prod(res(r_pu)) %>% as_units("m2") %>% set_units("km2")
@@ -237,7 +237,7 @@ for (i in 1:nlayers(s_features)){ # i = 1
     png(map25_png, width=480*4, height = 480*4, res=300, units='px')
     
     cols_v <- cols[1:round(length(cols)*pct_at25_4cols)]
-    
+
     # simple map
     plot(r, col = scales::alpha(cols, 0.2), legend=F, axes=F, box=F, 
          legend.mar = 3.1, legend.shrink = 0.3)
@@ -253,7 +253,10 @@ for (i in 1:nlayers(s_features)){ # i = 1
          axis.args = list(cex.axis = 0.5))
 
     dev.off()
+<<<<<<< HEAD
     
+=======
+>>>>>>> 437587b2ae4e44535f13019b6bad85fa1e435245
     map25_png %>%
       magick::image_read() %>% magick::image_trim() %>%
       magick::image_write(map25_png)
