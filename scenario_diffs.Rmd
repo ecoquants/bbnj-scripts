@@ -27,8 +27,8 @@ library(bbnj)
 #devtools::load_all() # devtools::install_local(force=T)
 select = dplyr::select
 
-dir_scenarios <- here("inst/app/www/scenarios")
-dir_diffs     <- here("inst/app/www/scenarios/diffs")
+dir_scenarios <- here("../bbnj/inst/app/www/scenarios")
+dir_diffs     <- here("../bbnj/inst/app/www/scenarios/diffs")
 scenarios <- list(
   s1  = "s01a.bio.now.mol50km",
   s2a = "s02a.bio.alltime.mol50km",
