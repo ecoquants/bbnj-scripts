@@ -11,10 +11,10 @@ knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
 
 ```{r libraries}
 library(prioritizr)
-# devtools::load_all()
+devtools::load_all("../bbnj")
 # devtools::install_local(force=T)
 # devtools::install_github("ecoquants/bbnj")
-library(bbnj)
+# library(bbnj)
 library(raster)
 library(sf)
 library(dplyr)
@@ -41,7 +41,7 @@ select = dplyr::select
 # set rainbow color palette
 
 #RColorBrewer::display.brewer.all()
-pal  <- colorRampPalette(brewer.pal(11, "YlOrRd"))
+pal  <- colorRampPalette(brewer.pal(9, "YlOrRd"))
 #pal  <- colorRampPalette(brewer.pal(11, "Reds"))
 #cols <- rev(pal(255))
 cols <- pal(255)
@@ -391,7 +391,7 @@ library(scales)
 
 extract <- raster::extract
 
-sol_shp <- here("inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol_gcs.shp")
+sol_shp <- here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol_gcs.shp")
 
 sol_sf <- read_sf(sol_shp)
 
@@ -436,6 +436,7 @@ d_vs_avg_w <- d_vs_avg %>%
 
 # TODO: include s04 features
 d_vs_avg_w # YES!
+write_csv(d_vs_avg_w, "map_layers/s04_avg-vs-ply_s-africa-big-ply.csv")
 
 DT::datatable(d_vs_avg_w)
 ggplot(d_vs, aes(x = score, y = layer, fill = source)) +
