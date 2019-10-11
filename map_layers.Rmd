@@ -55,6 +55,8 @@ Source of features: [`s04a.biofish.alltime.mol50km.Rmd`](https://github.com/ecoq
 # borrowed from: ~/github/bbnj/inst/app/www/scenarios/
 #                s04a.biofish.alltime.mol50km.Rmd
 
+data("projections_tbl")
+
 prjres     <- "_mol50km" # prjres in: View(projections_tbl)
 
 P <- projections_tbl %>% filter(prjres == !!prjres)
@@ -66,15 +68,15 @@ r_pu_id <- get_d_prjres("r_pu_id", prjres) #plot(r_pu_id)
 #   mask(r_pu_id) # plot(r_pu)
 
 # cost layer: fishing profitability ----
-r_fish_effort <- get_d_prjres("s_fish_gfw", prjres)%>%
-  subset("fishing_KWH")
+# r_fish_effort <- get_d_prjres("s_fish_gfw", prjres)%>%
+#   subset("fishing_KWH")
+# 
+# # apply cost to planning units
+# r_pu <- r_fish_effort %>% 
+#   reclassify(rcl=cbind(-Inf, 112774, NA), right=TRUE) %>% 
+#   gap_fill_raster(r_mask=r_pu_id)
 
-# apply cost to planning units
-r_pu <- r_fish_effort %>% 
-  reclassify(rcl=cbind(-Inf, 112774, NA), right=TRUE) %>% 
-  gap_fill_raster(r_mask=r_pu_id)
-
-# biodiversity: now + 2100 ----
+# biodiversity: now and future by taxonomic group----
 s_bio_gmbi_now <- get_gmbi_grpsmdl_prjres("groups02", prjres)
 lyrs_bio_now <- names(s_bio_gmbi_now) %>% 
   setdiff(str_subset(names(s_bio_gmbi_now), "rli")) %>% 
@@ -87,22 +89,33 @@ lyrs_bio_future <- names(s_bio_gmbi_future) %>%
   setdiff(str_subset(names(s_bio_gmbi_future), "rls"))
 s_bio_gmbi_future <- subset(s_bio_gmbi_future, lyrs_bio_future)
 
-# rls now + 2100
+# biodiversity now and future: nspp_all----
+s_bio_now_all <- get_gmbi_grpsmdl_prjres("groups00", prjres) %>% 
+  subset("groups00_nspp_all")
+
+s_bio_future_all <- get_gmbi_grpsmdl_prjres("groups00_2100", prjres) %>% 
+  subset("groups00_2100_nspp_all")
+
+# rls now and future: nspp_all----
 rls_all_now <- get_gmbi_grpsmdl_prjres("groups00", prjres) %>% 
   subset("groups00_rls_all")
 
 rls_all_future <- get_gmbi_grpsmdl_prjres("groups00_2100", prjres) %>% 
   subset("groups00_2100_rls_all")
 
-# features ----
+# seamounts ----
 s_seamounts <- get_d_prjres("s_phys_seamounts",prjres)
 lu_seamounts <- c(lteq200m="0to200",gt200lteq800m="gt200to800",gt800m="gt800")
 lbls_seamounts <- sprintf("phys_seamounts_%sm", lu_seamounts[names(s_seamounts)])
+seamounts_all <- sum(s_seamounts)
 
+# create feature stack ----
 s_features <- stack(
   get_d_prjres("r_vgpm", prjres),
   s_bio_gmbi_now,
   s_bio_gmbi_future,
+  s_bio_now_all,
+  s_bio_future_all,
   rls_all_now,
   rls_all_future,
   #raster(s_fish_gfw, "mean_scaled_profits_with_subsidies") %>%
@@ -110,22 +123,26 @@ s_features <- stack(
   #    rescale_raster(inverse=T),
   #raster(s_fish_ubc, "mcp_2004"),
   s_seamounts,
+  seamounts_all,
   get_d_prjres("r_phys_vents",prjres),
   get_d_prjres("r_phys_scapes_hetero",prjres))
 
 names(s_features) <- c(
   "bio_vgpm",
   gsub("^.*?_","",names(s_bio_gmbi_now)),
-  #gsub("^.*?_","",names(s_bio_gmbi_future)),
   gsub("groups02_2100_nspp","nspp_2100",names(s_bio_gmbi_future)),
+  "s_bio_now_all",
+  "s_bio_future_all",
   "rls_all_now",
   "rls_all_future",
   #"fish_profit.subs"
   #"fish_mcp.2004",
   lbls_seamounts,
+  "seamounts_all",
   "phys_vents",
   "scapes_hetero")
 ```
+
 
 ```{r indiv layers}
 dir_png <- here("map_layers")
@@ -151,7 +168,7 @@ countries <- rnaturalearth::ne_countries(returnclass = "sf") %>%
 graticules <- st_graticule(countries)
 
 # TODO
-for (i in 1:nlayers(s_features)){ # i = 1
+for (i in 1:nlayers(s_features)){  #i = 1
 #for (i in 1:5){ # i = 1
   
   r   <- raster(s_features, i)
@@ -283,6 +300,104 @@ for (i in 1:nlayers(s_features)){ # i = 1
 ```
 
 
+```{r map layer top quartile and s04}
+dir_png <- here("map25_layers")
+
+#color palette
+rainpal <- colorRampPalette(brewer.pal(11, "Spectral"))
+raincols <- rev(rainpal(255))
+
+#read in s04, top 21 highlights, and EEZ
+s04_sf <- read_sf(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol_gcs.shp")) %>%
+  st_transform(P$epsg)
+
+highlights<-read_sf(here("../bbnj-scripts/highlights/s04highlights_combined.shp"))%>%
+  st_transform(P$epsg)
+
+eez<-get_d_prjres("p_eez_s05","_mol50km") %>% 
+  st_transform(P$epsg) %>% 
+  st_geometry
+
+#countries
+countries <- rnaturalearth::ne_countries(returnclass = "sf") %>%
+  st_transform(P$epsg)
+graticules <- st_graticule(countries)
+
+
+for (i in 1:nlayers(s_features)){  #i = 1
+  
+  r   <- raster(s_features, i)
+  lyr <- names(s_features)[i]
+  
+  map25_png  <- glue("{dir_png}/{lyr}_map25.png")
+  message(glue("{i}/{nlayers(s_features)}: {lyr}"))
+
+# top quartile values
+  v25 <- quantile(r, probs=0.75)
+  r25 <- r %>% 
+    reclassify(rcl=cbind(-Inf,v25,NA), right=TRUE)
+
+
+  png(map25_png, width=480*6, height = 480*6, res=300, type="cairo", units='px')
+  
+  plot(r25, col=raincols, legend=F, axes=F, box=F)
+  plot(eez, col=gray(0.9), border="transparent", add=T)
+  plot(countries[1], col=gray(0.8), border=gray(0.7), lwd=0.5, add=T)
+  plot(graticules[1], col=gray(0.6), lwd=0.5, add=T)
+  plot(s04_sf[1], col=scales::alpha("green", 0.5), border=scales::alpha("black", 0.3), lwd=0.5, add=T)
+  plot(highlights[1], col="red",pch=19, cex=0.3, add=T)
+
+  dev.off()
+  
+  map25_png %>%
+      magick::image_read() %>% magick::image_trim() %>%
+      magick::image_write(map25_png)
+
+}
+```
+
+
+```{r nspp_all, eval=F}
+  rainpal <- colorRampPalette(brewer.pal(11, "Spectral"))
+  raincols <- rev(rainpal(255))
+
+# read in s04
+
+s04_sf <- read_sf(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol_gcs.shp")) %>%
+  st_transform(P$epsg)
+
+highlights<-read_sf(here("../bbnj-scripts/highlights/s04highlights_combined.shp"))%>%
+  st_transform(P$epsg)
+
+# countries
+countries <- rnaturalearth::ne_countries(returnclass = "sf") %>%
+  st_transform(P$epsg)
+graticules <- st_graticule(countries)
+
+#top quartile biodiversity now all
+s_bio_now_all_v25<-quantile(s_bio_now_all, probs=0.75)
+
+s_bio_now_all_25<- s_bio_now_all %>% 
+  reclassify(rcl=cbind(-Inf,s_bio_now_all_v25,NA), right=TRUE)
+
+  dir_png <- here("../bbnj-scripts/map_layers")
+  map_png <- glue("{dir_png}/nspp_all_25.png")
+
+png(map_png, width=480*6, height = 480*6, res=300, type="cairo", units='px')
+
+# plot(s_bio_now_all, col=rev( rainbow(30, start=0,end=0.7 ) ), breaks=seq(min(minValue(s_bio_now_all)),max(maxValue(s_bio_now_all)),length.out=100), alpha=0.2, legend=F, axes=F, box=F)
+plot(s_bio_now_all_25, col=scales::alpha(raincols, 0.8), legend=F, axes=F, box=F)
+plot(eez[1], col=gray(0.9), border="transparent", legend=F,add=T)
+plot(countries[1], col=gray(0.8), border=gray(0.7), lwd=0.5, add=T)
+plot(graticules[1], col=gray(0.6), lwd=0.5, add=T)
+plot(s04_sf[1], col=scales::alpha("yellow", 0.3), border=scales::alpha("black", 0.3), lwd=0.5, add=T)
+plot(highlights[1], col="orange",pch=19, cex=0.4,add=T)
+
+dev.off()
+
+     
+```
+
 ```{r top 30% layers as simple sum map, eval=F}
 D <- read_csv(summary30pct_csv)
 
@@ -355,34 +470,6 @@ sol30_map_png %>%
     magick::image_read() %>% magick::image_trim() %>%
     magick::image_write(map_png)
 
-```
-
-
-```{r solution & ebsas, eval=F}
-s04 <- raster(here("inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol.tif"))
-
-ebsa_abnj<-read_sf(here("inst/scripts/data_overlays/ebsa_abnj.shp")) %>% 
-  st_transform(54009)
-
-map_png <- here("inst/scripts/map_overlays/s04ebsa.png")
-
-countries <- rnaturalearth::ne_countries(returnclass = "sf") %>%
-  st_transform(54009)
-graticules <- st_graticule(countries)
-
-png(map_png, width=480*4, height = 480*4, res=300, type="cairo", units='px', bg = "transparent")
-
-
-plot(s04, alpha=0.8, legend=F, axes=F, box=F)
-plot(st_geometry(ebsa_abnj), add=T, col=scales::alpha("blue", .3), border="transparent")
-plot(st_geometry(countries), add=T, col=gray(0.8), border=gray(0.7), lwd=0.5)
-plot(st_geometry(graticules), add=T, col=gray(0.6), lwd=0.5)
-
-dev.off()
-
-map_png %>%
-  magick::image_read() %>% magick::image_trim() %>%
-  magick::image_write(map_png)
 ```
 
 ```{r solution polygon ggridges layers, eval=F}
