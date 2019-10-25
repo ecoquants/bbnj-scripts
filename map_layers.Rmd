@@ -344,7 +344,7 @@ for (i in 1:nlayers(s_features)){  #i = 1
   plot(eez, col=gray(0.9), border="transparent", add=T)
   plot(countries[1], col=gray(0.8), border=gray(0.7), lwd=0.5, add=T)
   plot(graticules[1], col=gray(0.6), lwd=0.5, add=T)
-  plot(s04_sf[1], col=scales::alpha("green", 0.5), border=scales::alpha("black", 0.3), lwd=0.5, add=T)
+  plot(s04_sf[1], col=scales::alpha("black", 0.4), border=scales::alpha("black", 0.3), lwd=0.5, add=T)
   plot(highlights[1], col="red",pch=19, cex=0.3, add=T)
 
   dev.off()

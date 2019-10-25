@@ -26,8 +26,8 @@ select = dplyr::select
 
 
 ```{r}
-  r1 <- raster(here("inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol.tif"))
-  r2 <- raster(here("inst/app/www/scenarios/s01a.bio.now.mol50km_sol.tif"))
+  r1 <- raster(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol.tif"))
+  r2 <- raster(here("../bbnj/inst/app/www/scenarios/s02a.bio.alltime.mol50km_sol.tif"))
 
   rng1 <- c(cellStats(r1, "min"), cellStats(r1, "max"))
   rng2 <- c(cellStats(r2, "min"), cellStats(r2, "max"))
@@ -54,7 +54,7 @@ select = dplyr::select
 
   #plot(r_dsm)
   
-  writeRaster(r_dsm, "inst/scripts/pewglossymap/s04-s01.tif")
+  writeRaster(r_dsm, "pewglossymap/s04-s02a.tif")
 
   
 # Create shapefile
@@ -64,12 +64,12 @@ select = dplyr::select
   
   #plot(p_dsm)
   
-  write_sf(p_dsm, "inst/scripts/pewglossymap/s04-s01.shp")
+  write_sf(p_dsm, "pewglossymap/s04-s02a.shp")
   
   
 # Create png
   
-png<- ("inst/scripts/pewglossymap/s04-s01.png")
+png<- ("pewglossymap/s04-s02a.png")
   # overlays
   countries  <- rnaturalearth::ne_countries(returnclass = "sf") %>%
     st_transform(54009)

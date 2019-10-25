@@ -1,5 +1,5 @@
 ---
-title: "map layers"
+title: "heatmap"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -13,7 +13,8 @@ knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
 library(prioritizr) # devtools::load_all("~/github/prioritizr")
 library(bbnj)       # 
 #devtools::load_all() # setwd(here()); devtools::install_local(force=T) 
-# devtools::install_github("ecoquants/bbnj")
+#library(devtools)
+#devtools::install_github("ecoquants/bbnj")
 library(raster)
 library(sf)
 library(dplyr)
@@ -36,9 +37,9 @@ select = dplyr::select
 # variables ----
 prjres   <- "_mol50km" # prjres in: View(projections_tbl)
 dir_out  <- here("/heatmap"); 
-r_tif    <- glue("{dir_out}/heatmap_s02_nspp_all.tif")
+r_tif    <- glue("{dir_out}/heatmap_s02a_nspp_all.tif")
 map_png  <- glue("{fs::path_ext_remove(r_tif)}.png")
-hist_png <- glue("{dir_out}/hist_s02_nspp_all.png")
+hist_png <- glue("{dir_out}/hist_s02a_nspp_all.png")
 
 # set rainbow color palette
 pal <- colorRampPalette(brewer.pal(11, "Spectral"))
@@ -132,7 +133,7 @@ dev.off()
 # calculate sum ----
 r <- sum(s_features, na.rm = T) %>% 
   mask(r_pu_id)
-writeRaster(r, r_tif)
+writeRaster(r, r_tif, overwrite=T)
 
 # plot ----
 countries <- rnaturalearth::ne_countries(returnclass = "sf") %>%
