@@ -36,16 +36,16 @@ library(bbnj)
 select = dplyr::select
 mapviewOptions(basemaps = c("Esri.OceanBasemap","Stamen.TonerLite"))
 
-dir_data  <- here("inst/data")
-dir_gdata <- "~/Gdrive Ecoquants/projects/bbnj/data" # on Ben Best's laptop
+dir_data  <- here("../bbnj/inst/data")
+dir_gdata <- "~/GoogleDrive/My Drive/BOI- Collaboration Folders/High Seas MPAs/bbnj/data" # on Morgan Visalli's laptop
 wdpa_sfx  <- "raw/WDPA/WDPA_Aug2019_marine-shapefile/WDPA_Aug2019_marine-shapefile-polygons.shp"
 
 scenarios <- tribble(
     ~s, ~scenario,
-  "s1", "s01a.bio.rls.grp01.30pct.gl.now.mol50km",
-  "s2", "s02a.bio.rls.grp01.30pct.gl.alltime.mol50km",
-  "s3", "s03a.biofish.rls.effort.reclass.qt75.grp01.30pct.gl.now.mol50km",
-  "s5", "s05a.biofish.effort.reclass.rls.grp01.30pct.gl.alltime.mol50km")
+  "s1", "s01a.bio.now.mol50km",
+  "s2", "s02a.bio.alltime.mol50km",
+  "s3", "s03a.biofish.now.mol50km",
+  "s4", "s04a.biofish.alltime.mol50km")
 
 datatable(scenarios)
 ```
@@ -68,9 +68,9 @@ datatable(layers)
 ```{r}
 get_scenarios_over_layers <- function(
   scenarios, layers, 
-  dir_scenarios = here("inst/app/www/scenarios"),
-  dir_overlays  = here("inst/scripts/data_overlays"),
-  redo = F){ #,
+  dir_scenarios = here("../bbnj/inst/app/www/scenarios"),
+  dir_overlays  = here("data_overlays"),
+  redo = T){ #,
   #get_layers = F,
   #get_scenarios = F){
   # dir_scenarios = here("inst/app/www/scenarios"); dir_overlays  = here("inst/scripts/data_overlays"); redo = T
@@ -275,30 +275,30 @@ s_l$summary %>%
   formatPercentage("lyr_scen_pct", 1)
 ```
 
-## s5 details
+## s4 details
 
 ### ebsa
 
 ```{r}
-tbl_scenario_layer(s_l, "s5", "ebsa")
+tbl_scenario_layer(s_l, "s4", "ebsa")
 ```
 
 ### ihor
 
 ```{r}
-tbl_scenario_layer(s_l, "s5", "ihor")
+tbl_scenario_layer(s_l, "s4", "ihor")
 ```
 
 ### mine
 
 ```{r}
-tbl_scenario_layer(s_l, "s5", "mine")
+tbl_scenario_layer(s_l, "s4", "mine")
 ```
 
 ### wdpa
 
 ```{r}
-tbl_scenario_layer(s_l, "s5", "wdpa")
+tbl_scenario_layer(s_l, "s4", "wdpa")
 ```
 
 ## wdpa details
@@ -354,8 +354,8 @@ leaflet(
   addPolygons(data=p_wdpa_hs, label = ~NAME)
 ```
 
-## todo: explore leafsync
+<!-- ## todo: explore leafsync -->
 
-- [leafsync](https://github.com/r-spatial/leafsync): small multiples for leaflet webmaps
-  ![](https://github.com/r-spatial/leafsync/raw/master/man/figures/README-sync.png)
+<!-- - [leafsync](https://github.com/r-spatial/leafsync): small multiples for leaflet webmaps -->
+<!--   ![](https://github.com/r-spatial/leafsync/raw/master/man/figures/README-sync.png) -->
 

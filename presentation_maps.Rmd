@@ -9,11 +9,12 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
 ```
 
-```{r layers}
+```{r libraries}
 library(prioritizr) # devtools::load_all("~/github/prioritizr")
 #library(bbnj)       # 
-devtools::load_all() # setwd(here()); devtools::install_local(force=T) 
-# devtools::install_github("ecoquants/bbnj")
+ # setwd(here()); devtools::install_local(force=T) 
+devtools::install_github("ecoquants/bbnj")
+devtools::load_all()
 library(raster)
 library(sf)
 library(dplyr)
@@ -28,6 +29,9 @@ library(lwgeom)
 library(RColorBrewer)
 area   = raster::area
 select = dplyr::select
+```
+
+```{r layers}
 # variables ----
 prjres     <- "_mol50km" # prjres in: View(projections_tbl)
 P <- projections_tbl %>% filter(prjres == !!prjres)
@@ -91,7 +95,7 @@ for (i in 1:nlayers(s_features)){  #i = 8
   r <- raster(s_features, i)
   lyr <- names(s_features)[i]
   #plot(r)
-  dir_png <- here("inst/scripts/presentation_maps")
+  dir_png <- here("presentation_maps")
   r_tif   <- glue("{dir_png}/{lyr}.tif")
   map_png <- glue("{dir_png}/{lyr}_map.png")
   
@@ -107,10 +111,15 @@ for (i in 1:nlayers(s_features)){  #i = 8
     st_transform(P$epsg)
   graticules <- st_graticule(countries)
   
+  # col_hs <- ggplot2::alpha("lightblue", 0.3)
+  # 
+  # r_hs <- get_d_prjres("r_pu_id", P$prjres)
+  # r_hs[!is.na(r_pu_id)] = 1
+  
   png(map_png, width=480*4, height = 480*4, res=300, type="cairo", units='px', bg = "transparent")
   
   plot(r, col=cols, legend=F, axes=F, box=F)
-  plot(eez, add=T, col=gray(0.9), legend=F)
+ # plot(eez, add=T, col=gray(0.9), legend=F)
   plot(st_geometry(countries), add=T, col=gray(0.8), border=gray(0.7), lwd=0.5)
   plot(st_geometry(graticules), add=T, col=gray(0.6), lwd=0.5)
   

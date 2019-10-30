@@ -51,7 +51,8 @@ tibble(
   kable()
 ```
 
-## Figure 3: s4 - s2a
+## Figure 3: s2a - s4
+Biodiversity now & future - Biodiversity now & future with fishing as cost
 
 ```{r}
 d <- scenarios_diff(scenarios[c("s2a", "s4")], dir_scenarios, dir_diffs)
@@ -60,7 +61,8 @@ diff_tbl(d$tbl)
 
 ![](`r d$png`)
 
-## Figure 4: s4 - s3
+## Figure 4: s3 - s4
+Biodiversity now with fishing as cost - Biodiversity now & future with fishing as cost
 
 ```{r}
 d <- scenarios_diff(scenarios[c("s3", "s4")], dir_scenarios, dir_diffs)
@@ -69,3 +71,12 @@ diff_tbl(d$tbl)
 
 ![](`r d$png`)
 
+## For discussion: s1 - s2b
+Biodiversity now (only) - Biodiversity future (only)
+
+```{r}
+d <- scenarios_diff(scenarios[c("s1", "s2b")], dir_scenarios, dir_diffs)
+diff_tbl(d$tbl)
+```
+
+![](`r d$png`)
