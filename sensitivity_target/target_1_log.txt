@@ -1,19 +1,19 @@
-Optimize a model with 54 rows, 84515 columns and 2112560 nonzeros
-Variable types: 0 continuous, 84515 integer (84515 binary)
+Optimize a model with 54 rows, 88312 columns and 2206883 nonzeros
+Variable types: 0 continuous, 88312 integer (88312 binary)
 Coefficient statistics:
-  Matrix range     [3e-03, 2e+03]
+  Matrix range     [1e-03, 2e+03]
   Objective range  [1e+05, 1e+08]
   Bounds range     [1e+00, 1e+00]
   RHS range        [5e+01, 3e+07]
-Found heuristic solution: objective 1.344778e+10
-Presolve removed 54 rows and 84515 columns
-Presolve time: 0.21s
+Found heuristic solution: objective 1.388184e+10
+Presolve removed 54 rows and 88312 columns
+Presolve time: 0.34s
 Presolve: All rows and columns removed
 
-Explored 0 nodes (0 simplex iterations) in 0.29 seconds
-Thread count was 1 (of 12 available processors)
+Explored 0 nodes (0 simplex iterations) in 0.43 seconds
+Thread count was 1 (of 4 available processors)
 
-Solution count 1: 1.34478e+10 
+Solution count 1: 1.38818e+10 
 
 Optimal solution found (tolerance 1.00e-01)
-Best objective 1.344777917530e+10, best bound 1.344777917530e+10, gap 0.0000%
+Best objective 1.388184404014e+10, best bound 1.388184404014e+10, gap 0.0000%
