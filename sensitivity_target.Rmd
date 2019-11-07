@@ -1,9 +1,10 @@
 ---
-output: 
-  html_document:
-      code_folding: hide
-editor_options: 
+editor_options:
   chunk_output_type: console
+output:
+  html_document:
+    code_folding: hide
+  word_document: default
 ---
 
 
@@ -43,7 +44,7 @@ select = dplyr::select
 
 Source of features: [`s04a.biofish.alltime.mol50km.Rmd`](https://github.com/ecoquants/bbnj/blob/699727ccbcf78935b0092a6c171af16f3e228120/inst/app/www/scenarios/s04a.biofish.alltime.mol50km.Rmd).
 
-```{r features, eval=T}
+```{r features, eval=F}
 # borrowed from: ~/github/bbnj/inst/app/www/scenarios/
 #                s04a.biofish.alltime.mol50km.Rmd
 
@@ -120,7 +121,7 @@ names(s_features) <- c(
 
 ## Loop through Targets
 
-```{r solve targets, eval=T}
+```{r solve targets, eval=F}
 rel_targets <- seq(0.1, 1, by=0.1)
 
 for (rel_target in rel_targets[]){ # rel_target = rel_targets[1]
@@ -134,13 +135,13 @@ for (rel_target in rel_targets[]){ # rel_target = rel_targets[1]
     add_relative_targets(rel_target)
   
   # solve ----
-  tif <- solve_log(p, pfx, redo=T)
+  tif <- solve_log(p, pfx, redo=F)
 }
 ```
 
 ## Summarize Target Solutions by Percent Area of High Seas
 
-```{r}
+```{r  html, eval=T}
 rel_targets <- seq(0.1, 1, by=0.1)
 
 d <- tibble(
@@ -164,3 +165,72 @@ g <- ggplot(data = d, aes(x=target, y=pct_hs)) +
 ggplotly(g)
 ```
 
+```{r figs for manuscript, eval=F}
+rel_targets <- seq(0.1, 1, by=0.1)
+
+d <- tibble(
+  target = seq(0.1, 1, by=0.1),
+  tif    = glue("sensitivity_target/target_{target}_sol.tif"),
+  pct_hs = map_dbl(tif, function(x){ get_tif_area_stats(x)$pct_solution}))
+
+d<- d %>% 
+  select(target, pct_hs) %>% 
+  mutate(
+    target = formattable::percent(target, digits=0),
+    pct_hs = formattable::percent(pct_hs, digits=2))
+
+formattable(d,
+            align=c("c","c"),
+            col.names = c("Conservation Target", "Percentage of ABNJ in Solution"))
+
+g <- ggplot(data = d, aes(x=target, y=pct_hs)) +
+  #geom_line() 
+  geom_area() + geom_point(color="red") + 
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent)+
+  labs(x="Conservation Target", y="Percentage of ABNJ in Solution")
+
+
+```
+
+```{r solve targets 30%-40%, eval=F}
+rel_targets <- seq(0.31, 0.39, by=0.01)
+
+for (rel_target in rel_targets[]){ # rel_target = rel_targets[1]
+  message(glue("rel_target: {rel_target} - {Sys.time()}"))
+  
+  pfx <- glue("sensitivity_target/target_{rel_target}")
+  
+  # problem ----
+  p <- problem(r_pu, s_features) %>%
+    add_min_set_objective() %>% 
+    add_relative_targets(rel_target)
+  
+  # solve ----
+  tif <- solve_log(p, pfx, redo=T)
+}
+```
+
+```{r  html fine scale, eval=T}
+rel_targets <- seq(0.3, 0.4, by=0.01)
+
+d2 <- tibble(
+  target = seq(0.3, 0.4, by=0.01),
+  tif    = glue("sensitivity_target/target_{target}_sol.tif"),
+  pct_hs = map_dbl(tif, function(x){ get_tif_area_stats(x)$pct_solution}))
+
+d2 %>% 
+  select(target, pct_hs) %>% 
+  mutate(
+    target = formattable::percent(target, digits=0),
+    pct_hs = formattable::percent(pct_hs, digits=2)) %>% 
+  kable()
+
+g2 <- ggplot(data = d2, aes(x=target, y=pct_hs)) +
+  #geom_line() 
+  geom_area() + geom_point(color="red") + 
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent)
+
+ggplotly(g2)
+```
