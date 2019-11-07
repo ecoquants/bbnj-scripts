@@ -17,7 +17,7 @@ library(RColorBrewer)
 library(here)
 ```
 
-```{r}
+```{r clean & organize features}
 
 #Read in csv of report from scenario 4
 features <- readr::read_csv(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_rep.csv"))
@@ -77,7 +77,9 @@ features <- features %>% mutate(clean.label = clean,
 # Convert relative_held to numeric
 features$relative_held <- as.numeric(features$relative_held)
 
+```
 
+``` {r plot all features}
 #Plot
 ggplot(features,aes(x=reorder(clean,-id),y=relative_held,label=scales::percent(relative_held)))+
   geom_bar(stat="identity",width=0.5,fill="#91bfdb")+
@@ -98,3 +100,50 @@ ggsave("figure2.png", width=6, height=9, units="in")
 
 ```
 
+``` {r plot by group}
+
+# Plot physical layers
+physfeatures<-dplyr::filter(features, feature %in% c("phys_seamounts_gt200to800m", "phys_seamounts_gt800m","phys_seamounts_0to200m","phys_vents","bio_vgpm","scapes_hetero"))
+
+ggplot(physfeatures,aes(x=reorder(clean,-id),y=relative_held,label=scales::percent(relative_held)))+
+  geom_bar(stat="identity",width=0.5,fill="#91bfdb")+
+  coord_flip()+
+  scale_y_continuous(limits = c(0, 1),labels = scales::percent,expand = c(0,0))+
+  scale_x_discrete(labels = rev(physfeatures$clean.label))+
+  xlab("")+
+  ylab("")+
+  geom_text(colour="black",hjust = -0.4, size=3)
+
+
+# Plot species richness (NOW) layers
+nsppfeaturesnow<-features %>% 
+  dplyr::filter(!(feature %in% c("phys_seamounts_gt200to800m", "phys_seamounts_gt800m","phys_seamounts_0to200m","phys_vents","bio_vgpm","scapes_hetero"))) %>% 
+  dplyr::filter(!grepl("2100", feature), ) %>% 
+  dplyr::filter(feature != "rls_all_future")
+
+ggplot(nsppfeaturesnow,aes(x=reorder(clean,-id),y=relative_held,label=scales::percent(relative_held)))+
+  geom_bar(stat="identity",width=0.5,fill="#91bfdb")+
+  coord_flip()+
+  scale_y_continuous(limits = c(0, 1),labels = scales::percent,expand = c(0,0))+
+  scale_x_discrete(labels = rev(nsppfeaturesnow$clean.label))+
+  xlab("")+
+  ylab("")+
+  geom_text(colour="black",hjust = -0.4, size=3)
+
+# Plot species richness (2100) layers
+nsppfeatures2100<-features %>% 
+  dplyr::filter(!(feature %in% c("phys_seamounts_gt200to800m", "phys_seamounts_gt800m","phys_seamounts_0to200m","phys_vents","bio_vgpm","scapes_hetero"))) %>% 
+  dplyr::filter(grepl("2100", feature), ) %>% 
+  dplyr::filter(feature != "rls_all_now")
+
+ggplot(nsppfeatures2100,aes(x=reorder(clean,-id),y=relative_held,label=scales::percent(relative_held)))+
+  geom_bar(stat="identity",width=0.5,fill="#91bfdb")+
+  coord_flip()+
+  scale_y_continuous(limits = c(0, 1),labels = scales::percent,expand = c(0,0))+
+  scale_x_discrete(labels = rev(nsppfeatures2100$clean.label))+
+  xlab("")+
+  ylab("")+
+  geom_text(colour="black",hjust = -0.4, size=3)
+
+
+```

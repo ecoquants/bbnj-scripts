@@ -37,14 +37,14 @@ select = dplyr::select
 mapviewOptions(basemaps = c("Esri.OceanBasemap","Stamen.TonerLite"))
 
 dir_data  <- here("../bbnj/inst/data")
-dir_gdata <- "~/GoogleDrive/My Drive/BOI- Collaboration Folders/High Seas MPAs/bbnj/data" # on Morgan Visalli's laptop
-wdpa_sfx  <- "raw/WDPA/WDPA_Aug2019_marine-shapefile/WDPA_Aug2019_marine-shapefile-polygons.shp"
+#dir_gdata <- "~/Gdrive Ecoquants/projects/bbnj/data" # on Ben Best's laptop
+#wdpa_sfx  <- "raw/WDPA/WDPA_Aug2019_marine-shapefile/WDPA_Aug2019_marine-shapefile-polygons.shp"
 
 scenarios <- tribble(
     ~s, ~scenario,
-  "s1", "s01a.bio.now.mol50km",
-  "s2", "s02a.bio.alltime.mol50km",
-  "s3", "s03a.biofish.now.mol50km",
+ # "s1", "s01a.bio.now.mol50km",
+ # "s2", "s02a.bio.alltime.mol50km",
+ # "s3", "s03a.biofish.now.mol50km",
   "s4", "s04a.biofish.alltime.mol50km")
 
 datatable(scenarios)
@@ -53,12 +53,13 @@ datatable(scenarios)
 ## layers
 
 ```{r}
+#MV removed WDPA on 11/5/19 b/c taking very long and not essential for manuscript
 layers <- tribble(
   ~layer, ~clip,    ~color,   ~fld_id, ~fld_name, ~raw_shp, 
   "ebsa",     T,  "purple", "EBSA_ID",    "NAME", glue("{dir_data}/ebsa.shp"),
   "ihor",     F,  "yellow",   "seaid",     "sea", glue("{dir_data}/ihor.shp"),
-  "mine",     F,     "red",      "id",  "holder", glue("{dir_data}/mine_claims.shp"),
-  "wdpa",     T,   "brown", "WDPA_PID",    "NAME", glue("{dir_gdata}/{wdpa_sfx}"))
+  "mine",     F,     "red",      "id",  "holder", glue("{dir_data}/mine_claims.shp"))
+ # "wdpa",     T,   "brown", "WDPA_PID",    "NAME", glue("{dir_gdata}/{wdpa_sfx}"))
 
 datatable(layers)
 ```
@@ -86,10 +87,12 @@ get_scenarios_over_layers <- function(
   
   lyrs_clip <- layers %>% filter(!exists_hs_shp)
   
-  for (layer in lyrs_clip$layer){ # layer = lyrs_clip$layer[1]
+
+  for (layer in lyrs_clip$layer){ #layer = lyrs_clip$layer[1]
     lyr <- layers %>% filter(layer==!!layer)
 
     read_sf(lyr$raw_shp) %>%
+      st_buffer(dist=0) %>% 
       st_intersection(p_abnj) %>% 
       mutate(
         area_km2 = st_area(geometry) %>%
@@ -112,7 +115,7 @@ get_scenarios_over_layers <- function(
   # iterate over layers x scenarios ----
   # redo = T
   #for (layer in layers$layer){ # layer = "ihor"
-  for (layer in layers$layer[-1]){ # layer = "ihor"
+  for (layer in layers$layer){  #layer = "ihor"
     lyr <- layers %>% filter(layer == !!layer)
     message(glue("layer: {layer}"))
     
@@ -125,7 +128,7 @@ get_scenarios_over_layers <- function(
     }
     
     # iterate over scenarios
-    for (s in scenarios$s){# s = "s3"
+    for (s in scenarios$s){ #s = "s4"
         
       scen     <- scenarios %>% filter(s == !!s)
       scenario <- scen$scenario
@@ -148,6 +151,8 @@ get_scenarios_over_layers <- function(
           st_make_valid()
         #st_is_valid(p_s)
         #st_is_valid(p_l)
+      
+#MV Note 11/6/19: Attempted to add st_collection_extract("MULTIPOLYGON") and st_cast("MULTIPOLYGON") at line 165 to convert p_s_l[4,] (North Pacific) from GEOMETRYCOLLECTION to MULTIPOLYGON. Right now the filtering on line 166 removes North Pacific entirely.
         
         # intersect p_l x p_s
         p_s_l <- p_l %>%
@@ -297,7 +302,7 @@ tbl_scenario_layer(s_l, "s4", "mine")
 
 ### wdpa
 
-```{r}
+```{r, eval=FALSE}
 tbl_scenario_layer(s_l, "s4", "wdpa")
 ```
 
@@ -307,7 +312,7 @@ Downloaded from [protectedplanet.net/marine](https://www.protectedplanet.net/mar
 
 ### table of high seas
 
-```{r}
+```{r, eval=F}
 p_wdpa_hs <- s_l$layers %>% 
   filter(layer=="wdpa") %>% 
   pull(hs_shp) %>% 
@@ -333,7 +338,7 @@ p_wdpa_hs %>%
 
 ### map of all
 
-```{r}
+```{r, eval=FALSE}
 leaflet(
       #elementId = "map_env",
       options = leafletOptions(
