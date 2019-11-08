@@ -58,7 +58,7 @@ layers <- tribble(
   ~layer, ~clip,    ~color,   ~fld_id, ~fld_name, ~raw_shp, 
   "ebsa",     T,  "purple", "EBSA_ID",    "NAME", glue("{dir_data}/ebsa.shp"),
   "ihor",     F,  "yellow",   "seaid",     "sea", glue("{dir_data}/ihor.shp"),
-  "mine",     F,     "red",      "id",  "holder", glue("{dir_data}/mine_claims.shp"))
+  "mine",     F,     "red",      "ID",  "name", glue("{dir_data}/mine-claims.shp"))
  # "wdpa",     T,   "brown", "WDPA_PID",    "NAME", glue("{dir_gdata}/{wdpa_sfx}"))
 
 datatable(layers)
@@ -87,7 +87,7 @@ get_scenarios_over_layers <- function(
   
   lyrs_clip <- layers %>% filter(!exists_hs_shp)
   
-  for (layer in lyrs_clip$layer){ #layer = lyrs_clip$layer[1]
+  for (layer in lyrs_clip$layer){ #layer = lyrs_clip$layer[3]
     lyr <- layers %>% filter(layer==!!layer)
 
     read_sf(lyr$raw_shp) %>%
