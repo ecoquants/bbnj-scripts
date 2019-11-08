@@ -74,7 +74,7 @@ get_scenarios_over_layers <- function(
   redo = T){ #,
   #get_layers = F,
   #get_scenarios = F){
-  # dir_scenarios = here("inst/app/www/scenarios"); dir_overlays  = here("inst/scripts/data_overlays"); redo = T
+  # dir_scenarios = here("../bbnj/inst/app/www/scenarios"); dir_overlays  = here("data_overlays"); redo = T
   
   # prep layers ----
   layers <- layers %>% 
@@ -87,7 +87,6 @@ get_scenarios_over_layers <- function(
   
   lyrs_clip <- layers %>% filter(!exists_hs_shp)
   
-
   for (layer in lyrs_clip$layer){ #layer = lyrs_clip$layer[1]
     lyr <- layers %>% filter(layer==!!layer)
 
@@ -115,7 +114,7 @@ get_scenarios_over_layers <- function(
   # iterate over layers x scenarios ----
   # redo = T
   #for (layer in layers$layer){ # layer = "ihor"
-  for (layer in layers$layer){  #layer = "ihor"
+  for (layer in layers$layer){  # layer = "ihor"
     lyr <- layers %>% filter(layer == !!layer)
     message(glue("layer: {layer}"))
     
@@ -128,7 +127,7 @@ get_scenarios_over_layers <- function(
     }
     
     # iterate over scenarios
-    for (s in scenarios$s){ #s = "s4"
+    for (s in scenarios$s){ # s = "s4"
         
       scen     <- scenarios %>% filter(s == !!s)
       scenario <- scen$scenario
@@ -141,32 +140,49 @@ get_scenarios_over_layers <- function(
         next()
       } 
 
-
       if (!file.exists(s_l_shp) | redo){
-        message(glue("    {layer} x {s} intersection -- {Sys.Date()}"))
+        message(glue("    {layer} x {s} intersection -- {Sys.time()}"))
         
-        # get poly
+        # get poly of scenario, dissolved
         p_s <- scen$sf[[1]] %>% 
           ms_dissolve() %>% 
           st_make_valid()
-        #st_is_valid(p_s)
-        #st_is_valid(p_l)
-      
-#MV Note 11/6/19: Attempted to add st_collection_extract("MULTIPOLYGON") and st_cast("MULTIPOLYGON") at line 165 to convert p_s_l[4,] (North Pacific) from GEOMETRYCOLLECTION to MULTIPOLYGON. Right now the filtering on line 166 removes North Pacific entirely.
         
         # intersect p_l x p_s
         p_s_l <- p_l %>%
           rename(l_hs_km2 = area_km2) %>% 
           st_intersection(p_s) %>% 
-          st_make_valid() %>% 
+          st_make_valid()
+        
+        # check for funky geometry type, eg GEOMETRYCOLLECTION
+        p_s_l_notpoly <- p_s_l %>% 
+          filter(!st_geometry_type(geometry) %in% c("POLYGON","MULTIPOLYGON"))
+        
+        if (nrow(p_s_l_notpoly) > 0){
+          # eg: ihor x s4: North Pacific Ocean
+          p_s_l_poly <- p_s_l %>% 
+            filter(st_geometry_type(geometry) %in% c("POLYGON","MULTIPOLYGON"))
+          
+          flds_fix <- names(p_s_l) %>% setdiff("geometry")
+          p_s_l_fixpoly <- p_s_l_notpoly %>% 
+            st_collection_extract("POLYGON") %>% 
+            group_by_at(flds_fix) %>% 
+            summarize()
+          
+          p_s_l <- rbind(
+            p_s_l_poly,
+            p_s_l_fixpoly)
+          #write_sf(p_s_l, s_l_shp)
+        }    
+        
+        p_s_l <- p_s_l %>%
           mutate(
+            # area of layer-scenario (vs layer-highseas)
             l_s_km2 = st_area(geometry) %>%  
               units::set_units(km^2),
-            l_s_pct = l_s_km2 / l_hs_km2) %>% 
-          filter(
-            st_geometry_type(geometry) %in% c("POLYGON","MULTIPOLYGON"))
-        #st_geometry_type(p_s_l) %>% droplevels() %>% table()
-        
+            # percent of layer-scenario in the highseas
+            l_s_pct = l_s_km2 / l_hs_km2)
+
         sum_l_s_km2 <- sum(p_s_l$l_s_km2, na.rm=T)
         message(glue("    sum_l_s_km2: {format(sum_l_s_km2, big.mark=',')}"))
         
@@ -302,15 +318,17 @@ tbl_scenario_layer(s_l, "s4", "mine")
 
 ### wdpa
 
+MV removed WDPA on 11/5/19 b/c taking very long and not essential for manuscript
+
 ```{r, eval=FALSE}
 tbl_scenario_layer(s_l, "s4", "wdpa")
 ```
 
-## wdpa details
+#### wdpa source
 
 Downloaded from [protectedplanet.net/marine](https://www.protectedplanet.net/marine).
 
-### table of high seas
+#### wdpa table of high seas
 
 ```{r, eval=F}
 p_wdpa_hs <- s_l$layers %>% 
@@ -336,7 +354,7 @@ p_wdpa_hs %>%
   datatable()
 ```
 
-### map of all
+#### map of all
 
 ```{r, eval=FALSE}
 leaflet(
