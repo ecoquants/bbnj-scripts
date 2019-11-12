@@ -1,0 +1,139 @@
+---
+title: "EEZ Analysis"
+output:
+  html_document:
+    # number_sections: no
+    # toc: yes
+    # toc_depth: 3
+    # toc_float: true
+    code_folding: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+```
+
+From `notes | bbnj`. Use same code as scenario_overlays? —> maybe no, instead try:
+
+1. take EEZ shapefile & turn into mollweide raster
+1. mask out HS from raster
+1. make vector from that raster
+1. calculate shared length of EEZ border with scenario 4
+
+```{r}
+library(glue)
+library(dplyr)
+library(here)
+library(bbnj)
+library(fasterize)
+library(sf)
+library(lwgeom)
+library(units)
+library(tibble)
+library(raster)
+library(rmapshaper)
+library(ggplot2)
+library(readr)
+library(DT)
+
+dir_out       <- here("eez_scenario")
+dir_scenarios <- here("../bbnj/inst/app/www/scenarios")
+
+#list.files(dir_scenarios)
+scen      <- "s04a.biofish.alltime.mol50km"
+
+scen_tif  <- glue("{dir_scenarios}/{scen}_sol.tif")
+x_csv     <- glue("{dir_out}/s04a_eez.csv")
+x_shp     <- glue("{dir_out}/s04a_eez.shp")
+x_sov_csv <- glue("{dir_out}/s04a_eez_sov.csv")
+x_sov_shp <- glue("{dir_out}/s04a_eez_sov.shp")
+q_eez_shp <- glue("{dir_out}/q_eez.shp")
+q_sol_shp <- glue("{dir_out}/q_s04a.shp")
+
+r_scen <- raster(scen_tif)
+plot(r_scen, main = "r_scen")
+
+if (!file.exists(x_csv)){
+  #data(package="bbnj")
+
+  #p_eez_s05 %>% st_drop_geometry() %>% head()  
+  #p_eez_s05 %>% st_drop_geometry() %>% View()
+  
+  p_eez_s05_mol <- p_eez_s05 %>% 
+    filter(Territory1 != "Antarctica") %>% 
+    st_transform(54009)
+  plot(p_eez_s05_mol["MRGID"])
+  r_eez_mrgid <- fasterize(p_eez_s05_mol, r_scen, field="MRGID")
+  crs(r_eez_mrgid) <- crs(r_scen)
+  #compareRaster(r_eez_mrgid, r_scen)
+  #plot(r_eez_mrgid, main = "r_eez_mrgid")
+  
+  # q_*: polygons (p_*) that have been rasterized (r_*)
+  q_eez <- rasterToPolygons(r_eez_mrgid, dissolve=T) %>% 
+  # q_eez <- q_eez %>%
+    st_as_sf() %>%
+    rename_at(vars(1), function(x) "eez_mrgid") %>%
+    ms_dissolve(field="eez_mrgid") %>%
+    st_make_valid() %>%
+    st_buffer(0)
+  q_sol <- rasterToPolygons(r_scen, dissolve=T) %>% 
+  # q_sol <- q_sol %>%
+    st_as_sf() %>%
+    rename_at(vars(1), function(x) "scen_sol") %>%
+    ms_dissolve(field="scen_sol") %>%
+    filter(scen_sol == 1) %>%
+    st_make_valid() %>% 
+    st_buffer(0)
+  
+  write_sf(q_eez, q_eez_shp)
+  write_sf(q_sol, q_sol_shp)
+  
+  x <- st_intersection(q_eez, q_sol) %>% 
+  st_collection_extract("LINESTRING") %>% 
+  #filter(st_geometry_type(geometry) != "POINT") %>% 
+  #st_geometry_type() %>% 
+  #st_cast("MULTILINESTRING")
+  group_by(eez_mrgid) %>% 
+  summarize(
+    length_km = sum(st_length(geometry)) %>% set_units(km)) %>% 
+  left_join(
+    p_eez_s05 %>% st_drop_geometry(),
+    by = c("eez_mrgid" = "MRGID"))
+  
+  x_sov <- x %>% 
+    group_by(Sovereign1) %>% 
+    summarise(
+      length_km = sum(length_km))
+
+  write_csv(st_drop_geometry(x), x_csv)
+  write_csv(st_drop_geometry(x_sov), x_sov_csv)
+  write_sf(x_sov, x_sov_shp)
+  write_sf(x, x_shp)
+}
+x     <- read_sf(x_shp)
+x_sov <- read_sf(x_sov_shp)
+q_eez <- read_sf(q_eez_shp)
+q_sol <- read_sf(q_sol_shp)
+
+ggplot() + 
+  geom_sf(
+    data = q_sol %>% mutate(scen_sol = as.factor(scen_sol)), 
+    aes(fill = scen_sol), alpha = 0.3) + 
+  #scale_fill_manual(values=c("gray", "green")) +
+  geom_sf(
+    data = q_eez %>% mutate(eez_sovid = as.factor(eez_mrgid)), 
+    aes(fill = eez_sovid)) + 
+  geom_sf(
+    data = x, col = "red") + 
+  #scale_fill_brewer(palette="Spectral") +
+  theme(legend.position="none")
+
+summarise(x, length_km = sum(length_km))
+
+datatable(st_drop_geometry(x), caption = "Intersection of Scenario 4a with individual EEZs.")
+
+datatable(st_drop_geometry(x_sov), caption = "Intersection of Scenario 4a with EEZs grouped by Sovereign1.")
+```
+
