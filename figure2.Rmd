@@ -15,6 +15,7 @@ library(tidyverse)
 library(ggplot2)
 library(RColorBrewer)
 library(here)
+library(stringr)
 ```
 
 ```{r clean & organize features}
@@ -77,6 +78,7 @@ features <- features %>% mutate(clean.label = clean,
 # Convert relative_held to numeric
 features$relative_held <- as.numeric(features$relative_held)
 
+
 ```
 
 ``` {r plot all features}
@@ -102,48 +104,149 @@ ggsave("figure2.png", width=6, height=9, units="in")
 
 ``` {r plot by group}
 
+#Read in csv of report from scenario 4
+features2 <- readr::read_csv(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_rep.csv"))
+
+#Remove row with area of solution in km
+features2 <- features2[-c(1), ]
+
+#Clean feature names
+
+features2$clean <- (gsub("^.*?p_","", features2$feature)) 
+features2$clean <- (gsub("\\.n\\."," and ", features2$clean))
+features2$clean <- (gsub("\\."," ", features2$clean))
+
+features2$clean <- features2$clean %>%
+  str_replace_all(c(
+  "bio_vgpm" = "Net Primary Production",
+  "phys_vents" = "Hydrothermal Vents",
+  "rls_all_now" = "Red List Sum Now",
+  "rls_all_future" = "Red List Sum 2100",
+  "phys_seamounts_gt200to800m" = "Seamounts >200-800m",
+  "phys_seamounts_gt800m" = "Seamounts >800m",
+  "phys_seamounts_0to200m" = "Seamounts 0-200m",
+  "scapes_hetero" = "Benthic Heterogeneity"
+    ))
+
+simpleCap <- function(x) {
+  s <- strsplit(x, " ")[[1]]
+  paste(toupper(substring(s, 1,1)), substring(s, 2),
+      sep="", collapse=" ")
+}
+
+features2$clean <- sapply(features2$clean, simpleCap)
+
+features2 <- features2 %>% 
+  bind_rows(
+    features2 %>%
+      filter(str_detect(feature, "^nspp")) %>%
+      summarise_at("relative_held", mean) %>% 
+      mutate(feature="all_nspp", clean="Species Richness (Mean)") 
+  ) %>% 
+    bind_rows(
+    features2 %>%
+      filter(str_detect(feature, "^X2100")) %>%
+      summarise_at("relative_held", mean) %>% 
+      mutate(feature="all_nspp_2100", clean="Species Richness 2100 (Mean)") 
+  )
+
+
+
 # Plot physical layers
-physfeatures<-dplyr::filter(features, feature %in% c("phys_seamounts_gt200to800m", "phys_seamounts_gt800m","phys_seamounts_0to200m","phys_vents","bio_vgpm","scapes_hetero"))
+physfeatures<-filter(features2, feature %in% c("phys_seamounts_gt200to800m", "phys_seamounts_gt800m","phys_seamounts_0to200m","phys_vents","scapes_hetero"))
+
+physfeatures$id <- NA
+
+physfeatures$id[c(5,4,3,1,2)] <- c(1,2,3,4,5)
 
 ggplot(physfeatures,aes(x=reorder(clean,-id),y=relative_held,label=scales::percent(relative_held)))+
   geom_bar(stat="identity",width=0.5,fill="#91bfdb")+
   coord_flip()+
   scale_y_continuous(limits = c(0, 1),labels = scales::percent,expand = c(0,0))+
-  scale_x_discrete(labels = rev(physfeatures$clean.label))+
   xlab("")+
   ylab("")+
-  geom_text(colour="black",hjust = -0.4, size=3)
+  geom_text(colour="black",hjust = -0.4, size=3)+
+  theme(
+    plot.margin=unit(c(1,1,1,1),"cm")
+  )
 
 
-# Plot species richness (NOW) layers
-nsppfeaturesnow<-features %>% 
-  dplyr::filter(!(feature %in% c("phys_seamounts_gt200to800m", "phys_seamounts_gt800m","phys_seamounts_0to200m","phys_vents","bio_vgpm","scapes_hetero"))) %>% 
-  dplyr::filter(!grepl("2100", feature), ) %>% 
-  dplyr::filter(feature != "rls_all_future")
+# Plot species richness by taxa (NOW) layers
+nsppfeaturesnow<-features2 %>% 
+  filter(str_detect(feature, "^nspp"))
 
-ggplot(nsppfeaturesnow,aes(x=reorder(clean,-id),y=relative_held,label=scales::percent(relative_held)))+
+ggplot(nsppfeaturesnow,aes(x=rev(clean),y=relative_held,label=scales::percent(relative_held)))+
   geom_bar(stat="identity",width=0.5,fill="#91bfdb")+
   coord_flip()+
   scale_y_continuous(limits = c(0, 1),labels = scales::percent,expand = c(0,0))+
-  scale_x_discrete(labels = rev(nsppfeaturesnow$clean.label))+
+  scale_x_discrete(labels = rev(nsppfeaturesnow$clean))+
   xlab("")+
   ylab("")+
-  geom_text(colour="black",hjust = -0.4, size=3)
+  geom_text(colour="black",hjust = -0.4, size=3)+
+  theme(
+    plot.margin=unit(c(1,1,1,1),"cm")
+  )
 
 # Plot species richness (2100) layers
-nsppfeatures2100<-features %>% 
-  dplyr::filter(!(feature %in% c("phys_seamounts_gt200to800m", "phys_seamounts_gt800m","phys_seamounts_0to200m","phys_vents","bio_vgpm","scapes_hetero"))) %>% 
-  dplyr::filter(grepl("2100", feature), ) %>% 
-  dplyr::filter(feature != "rls_all_now")
+nsppfeatures2100<-features2 %>% 
+  filter(str_detect(feature, "^X2100"))
 
-ggplot(nsppfeatures2100,aes(x=reorder(clean,-id),y=relative_held,label=scales::percent(relative_held)))+
+ggplot(nsppfeatures2100,aes(x=rev(clean),y=relative_held,label=scales::percent(relative_held)))+
   geom_bar(stat="identity",width=0.5,fill="#91bfdb")+
   coord_flip()+
   scale_y_continuous(limits = c(0, 1),labels = scales::percent,expand = c(0,0))+
-  scale_x_discrete(labels = rev(nsppfeatures2100$clean.label))+
+  scale_x_discrete(labels = rev(nsppfeatures2100$clean))+
   xlab("")+
   ylab("")+
-  geom_text(colour="black",hjust = -0.4, size=3)
+  geom_text(colour="black",hjust = -0.4, size=3)+
+  theme(
+    plot.margin=unit(c(1,1,1,1),"cm")
+  )
+
+#Plot biological features
+
+biofeatures<-filter(features2, feature %in% c("bio_vgpm","all_nspp_2100", "all_nspp","rls_all_now","rls_all_future"))
+
+biofeatures$id <- NA
+
+biofeatures$id[c(1,4,5,2,3)] <- c(1,2,3,4,5)
+
+ggplot(biofeatures,aes(x=reorder(clean,-id),y=relative_held,label=scales::percent(relative_held)))+
+  geom_bar(stat="identity",width=0.5,fill="#91bfdb")+
+  coord_flip()+
+  scale_y_continuous(limits = c(0, 1),labels = scales::percent,expand = c(0,0))+
+  xlab("")+
+  ylab("")+
+  geom_text(colour="black",hjust = -0.4, size=3)+
+  theme(
+    plot.margin=unit(c(1,1,1,1),"cm")
+  )
 
 
 ```
+
+```{r plot as facets}
+
+# Add categories for facets
+
+testfacets <- features2 %>% 
+  mutate (category = ifelse(str_detect(feature, "^nspp") == TRUE,"Taxa Richness Now",
+                            ifelse (str_detect(feature, "^X2100") == TRUE,"Taxa Richness 2100",
+                                    ifelse(str_detect(feature, "^all") == TRUE, "Biological All",
+                                           ifelse(str_detect(feature, "^rls") == TRUE, "Biological All",
+                                                  "Physical")))))
+
+#Plot
+g<- ggplot(features2,aes(x=clean,y=relative_held,label=scales::percent(relative_held)))+
+  geom_bar(stat="identity",width=0.5,fill="#91bfdb")+
+  coord_flip()+
+  scale_y_continuous(limits = c(0, 1),labels = scales::percent,expand = c(0,0))+
+  scale_x_discrete(labels = rev(features2$clean))+
+  xlab("")+
+  ylab("")+
+  geom_text(colour="black",hjust = -0.4, size=3)
+
+g + facet_wrap(~ category, ncol=2)
+
+```
+
