@@ -20,7 +20,6 @@ eez_mrgid,length_km,PolygonID,GeoName,Pol_type,MRGID_Ter1,Territory1,MRGID_Sov1,
 8338,350.735500034001,34,R�union Exclusive Economic Zone,200NM,8609,R�union,17,France,REU,0,NA,0,NA,NA,0,NA,0,NA,NA,54.7132777,-21.7819697,315408.212326,8338,31,NA
 8341,100.2153974505,250,Ile Europa Exclusive Economic Zone,200NM,8612,Europa Island,17,France,ATF,0,NA,0,NA,NA,0,NA,0,NA,NA,40.1092775,-23.5368182,127945.997412,8341,234,NA
 8343,952.064666821801,33,Mauritian Exclusive Economic Zone,200NM,8614,Republic of Mauritius,8614,Republic of Mauritius,MUS,0,NA,0,NA,NA,0,NA,0,NA,NA,60.1172031,-16.8102129,1278112.77102,8343,30,NA
-8344,250.527459000499,20,Disputed area Chagos Archipelago Exclusive Economic Zone: UK / Mauritius,Disputed,8616,Chagos Archipelago,2208,United Kingdom,IOT,8614,Republic of Mauritius,8614,Republic of Mauritius,MUS,0,NA,0,NA,NA,71.9497918,-6.5832716,638107.764246,8344,17,NA
 8347,50.1113769337996,40,Mozambican Exclusive Economic Zone,200NM,2220,Mozambique,2220,Mozambique,MOZ,0,NA,0,NA,NA,0,NA,0,NA,NA,37.9562061,-20.3732121,566107.319809,8347,37,NA
 8348,1152.4513232204,29,Madagascan Exclusive Economic Zone,200NM,7963,Madagascar,7963,Madagascar,MDG,0,NA,0,NA,NA,0,NA,0,NA,NA,47.2538895,-20.9128765,1196333.81237,8348,26,NA
 8349,250.5421718346,41,Kenyan Exclusive Economic Zone,200NM,2118,Kenya,2118,Kenya,KEN,0,NA,0,NA,NA,0,NA,0,NA,NA,42.2930873,-3.2073303,113818.646103,8349,38,NA
@@ -33,19 +32,16 @@ eez_mrgid,length_km,PolygonID,GeoName,Pol_type,MRGID_Ter1,Territory1,MRGID_Sov1,
 8363,1052.2506386039,77,Portuguese Exclusive Economic Zone (Madeira),200NM,4956,Madeira,2243,Portugal,PRT,0,NA,0,NA,NA,0,NA,0,NA,NA,-16.8109068,33.1730175,452810.174016,8363,73,NA
 8364,501.0843436691,59,Spanish Exclusive Economic Zone (Canary Islands),200NM,3743,Canary Islands,2185,Spain,ESP,0,NA,0,NA,NA,0,NA,0,NA,NA,-17.6139556,28.3671477,445893.382119,8364,56,NA
 8367,50.1113769338001,80,Moroccan Exclusive Economic Zone,200NM,2221,Morocco,2221,Morocco,MAR,0,NA,0,NA,NA,0,NA,0,NA,NA,-9.8513913,32.7816028,280453.136651,8367,269,NA
-8368,801.7526052717,252,Disputed area Western Saharan Exclusive Economic Zone,Disputed,8617,Western Sahara,8617,Western Sahara,ESH,2221,Morocco,2221,Morocco,MAR,0,NA,0,NA,NA,-17.6951304,23.3411861,284066.375395,8368,235,NA
 8369,50.1113769336999,78,Mauritanian Exclusive Economic Zone,200NM,2236,Mauritania,2236,Mauritania,MRT,0,NA,0,NA,NA,0,NA,0,NA,NA,-17.9181449,18.2466224,173189.736645,8369,74,NA
 8371,350.7722821192,116,Senegalese Exclusive Economic Zone,200NM,2225,Senegal,2225,Senegal,SEN,0,NA,0,NA,NA,0,NA,0,NA,NA,-18.5035747,13.6946293,158604.115529,8371,111,NA
 8379,1703.6911823257,2,Ascension Exclusive Economic Zone,200NM,8620,Ascension,2208,United Kingdom,ASC,0,NA,0,NA,NA,0,NA,0,NA,NA,-14.3633727,-7.9474685,446005.325434,8379,1,NA
 8380,2405.2063208958,7,St. Helena Exclusive Economic Zone,200NM,8619,Saint Helena,2208,United Kingdom,SHN,0,NA,0,NA,NA,0,NA,0,NA,NA,-5.7086913,-15.9727781,449214.734358,8380,6,NA
 8382,2154.6862183126,10,Tristan Da Cunha Exclusive Economic Zone,200NM,8621,Tristan da Cunha,2208,United Kingdom,TAA,0,NA,0,NA,NA,0,NA,0,NA,NA,-11.3358981,-39.0680541,817104.430557,8382,9,NA
-8383,1853.9591053734,14,Disputed area South Georgia and South Sandwich Exclusive Economic Zone: UK / Argentina,Disputed,8624,South Georgia and the South Sandwich Islands,2208,United Kingdom,SGS,2149,Argentina,2149,Argentina,ARG,0,NA,0,NA,NA,-31.5702278,-56.4545855,1287582.613,8383,12,NA
 8384,701.507782153,45,South African Exclusive Economic Zone (Prince Edward Islands),200NM,22598,Prince Edward Islands,2176,South Africa,ZAF,0,NA,0,NA,NA,0,NA,0,NA,NA,37.8085361,-46.8329157,474896.777438,8384,42,NA
 8385,701.507782152999,24,Crozet Islands Exclusive Economic Zone,200NM,8627,Crozet Islands,17,France,ATF,0,NA,0,NA,NA,0,NA,0,NA,NA,51.2121814,-46.3069575,575374.872768,8385,21,NA
 8386,2555.4595311095,18,Amsterdam Island & St. Paul Island Exclusive Economic Zone,200NM,48979,Amsterdam and Saint Paul Islands,17,France,ATF,0,NA,0,NA,NA,0,NA,0,NA,NA,77.5418063,-38.2943091,512187.835173,8386,16,NA
 8387,801.730536020501,28,Kerguelen Exclusive Economic Zone,200NM,8630,Kergu�len,17,France,ATF,0,NA,0,NA,NA,0,NA,0,NA,NA,68.9745992,-48.8779454,550720.881404,8387,25,NA
 8388,1002.1319052532,27,Heard and McDonald Islands Exclusive Economic Zone,200NM,8631,Heard and McDonald Islands,2147,Australia,HMD,0,NA,0,NA,NA,0,NA,0,NA,NA,73.7305146,-53.4986253,417353.385682,8388,24,NA
-8389,601.2850282854,4,Disputed area Falkland Islands Exclusive Economic Zone: UK / Argentina,Disputed,8623,Falkland Islands,2208,United Kingdom,FLK,2149,Argentina,2149,Argentina,ARG,0,NA,0,NA,NA,-58.322366100000004,-51.6670264,549931.724317,8389,3,NA
 8390,50.1113769337001,73,Sierra Leonian Exclusive Economic Zone,200NM,2191,Sierra Leone,2191,Sierra Leone,SLE,0,NA,0,NA,NA,0,NA,0,NA,NA,-14.14468,6.6354075,160578.277588,8390,70,NA
 8391,651.3964052192,121,Liberian Exclusive Economic Zone,200NM,2105,Liberia,2105,Liberia,LBR,0,NA,0,NA,NA,0,NA,0,NA,NA,-10.1776291,3.802803,251776.275286,8391,116,NA
 8392,50.1040205167,147,Togolese Exclusive Economic Zone,200NM,8632,Togo,8632,Togo,TGO,0,NA,0,NA,NA,0,NA,0,NA,NA,1.8213496,4.639492,15439.2618032,8392,140,NA
@@ -96,9 +92,6 @@ eez_mrgid,length_km,PolygonID,GeoName,Pol_type,MRGID_Ter1,Territory1,MRGID_Sov1,
 8492,450.950897484299,220,Indonesian Exclusive Economic Zone,200NM,2127,Indonesia,2127,Indonesia,IDN,0,NA,0,NA,NA,0,NA,0,NA,NA,117.8981476,-3.3090348,6025109.71458,8492,207,NA
 8493,1853.9591053734,246,Canadian Exclusive Economic Zone,200NM,2169,Canada,2169,Canada,CAN,0,NA,0,NA,NA,0,NA,0,NA,NA,-90.3213368,68.6613959,5769849.28296,8493,230,NA
 22756,1703.6617566575,261,Chilean Exclusive Economic Zone (San Felix and San Ambrosio islands),200NM,25135,Islas San F�lix and San Ambrosio,2165,Chile,CHL,0,NA,0,NA,NA,0,NA,0,NA,NA,-79.9908636,-26.3309137,450960.402638,22756,247,NA
-33176,400.8689462188,883,Disputed area: Kenya / Somalia,Disputed,2118,Kenya,2118,Kenya,KEN,2187,Federal Republic of Somalia,2187,Federal Republic of Somalia,SOM,0,NA,0,NA,NA,42.303611,-1.860443,50229.5785767,33176,280,NA
 33177,50.1113769336999,72,Guadeloupean Exclusive Economic Zone,200NM,8654,Guadeloupe,17,France,GLP,0,NA,0,NA,NA,0,NA,0,NA,NA,-59.8504431,16.7988046,90858.9144169,33177,69,NA
 33178,50.1113769336999,101,Martinican Exclusive Economic Zone,200NM,8655,Martinique,17,France,MTQ,0,NA,0,NA,NA,0,NA,0,NA,NA,-60.200546,14.9751155,47599.5553363,33178,96,NA
-33185,50.1113769336999,120,Disputed area: Trinidad and Tobago / Venezuela / Guyana,Disputed,2124,Guyana,2124,Guyana,GUY,2186,Trinidad and Tobago,2186,Trinidad and Tobago,TTO,2201,Venezuela,2201,Venezuela,VEN,-57.8871182,10.5653892,3590.7855274,33185,115,NA
-48948,450.950897484301,254,Disputed area Matthew and Hunter Islands: New Caledonia / Vanuatu,Disputed,2261,New Caledonia,17,France,NCL,2202,Vanuatu,2202,Vanuatu,VUT,0,NA,0,NA,NA,172.036552,-23.2791119,187985.096385,48948,237,NA
 48980,50.1113769338001,177,Northern Mariana Exclusive Economic Zone,200NM,8598,Northern Mariana Islands,2204,United States,MNP,0,NA,0,NA,NA,0,NA,0,NA,NA,145.7393322,18.2865983,763555.008407,48980,169,NA
