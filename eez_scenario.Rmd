@@ -63,12 +63,18 @@ if (!file.exists(x_csv)){
   
   p_eez_s05_mol <- p_eez_s05 %>% 
     filter(Territory1 != "Antarctica") %>% 
+    filter(Pol_type == "200NM") %>% 
     st_transform(54009)
   plot(p_eez_s05_mol["MRGID"])
   r_eez_mrgid <- fasterize(p_eez_s05_mol, r_scen, field="MRGID")
   crs(r_eez_mrgid) <- crs(r_scen)
   #compareRaster(r_eez_mrgid, r_scen)
   #plot(r_eez_mrgid, main = "r_eez_mrgid")
+  
+   eez_sov <- p_eez_s05_mol %>%
+     group_by(Sovereign1) %>% 
+     summarise(
+      area_km2 = sum(Area_km2))
   
   # q_*: polygons (p_*) that have been rasterized (r_*)
   q_eez <- rasterToPolygons(r_eez_mrgid, dissolve=T) %>% 
@@ -138,6 +144,7 @@ x %>%
     caption = "Intersection of Scenario 4a with individual EEZs.") %>% 
   formatRound(columns=c("length_km"), digits=1)
 ```
+Total number of EEZs globally (excluding disputed areas and joint claims): `r nrow(p_eez_s05_mol)`
 
 Download: [`s04a_eez.csv`](https://raw.githubusercontent.com/ecoquants/bbnj-scripts/master/eez_scenario/s04a_eez.csv)
 
@@ -148,6 +155,7 @@ x_sov %>%
     caption = "Intersection of Scenario 4a with EEZs grouped by Sovereign1.") %>% 
   formatRound(columns=c("length_km"), digits=1)
 ```
+Total number of sovereign EEZs globally (excluding disputed areas and joint claims): `r nrow(eez_sov)`
 
 Download: [`s04a_eez_sov.csv`](https://raw.githubusercontent.com/ecoquants/bbnj-scripts/master/eez_scenario/s04a_eez_sov.csv)
 
