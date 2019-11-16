@@ -2,6 +2,8 @@
 title: "Taxonomic Group Treemap"
 author:
 date: "11/8/2019"
+editor_options:
+  chunk_output_type: console
 output:
   html_document:
     code_folding: hide
@@ -54,7 +56,7 @@ spp <- readr::read_csv("extdata/spp_bbnj.csv")
 
 ```
 
-```{r group 01}
+```{r group 01, eval=F}
 
 groupnumber<-"groups01"
 
@@ -71,7 +73,7 @@ ____
 
 - `r nspp_grp` Species
 
-```{r out.width = '1200px'}
+```{r out.width = '1200px', eval=F}
 
 #Create treemap where size of rectangle corresponds to number of species in each group
 
@@ -125,6 +127,9 @@ knitr::kable(taxa_grp,
              col.names = c("Group",
                            "Number of Species")) %>% 
   kable_styling(bootstrap_options = "striped")
+
+write_csv(taxa_grp, path="taxa_grp02.csv")
+
 ```
 
 
