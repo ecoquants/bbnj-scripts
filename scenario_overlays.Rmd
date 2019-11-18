@@ -64,6 +64,16 @@ layers <- tribble(
 datatable(layers)
 ```
 
+### ebsa inspect
+
+```{r}
+ebsa_shp <- glue("{dir_data}/ebsa.shp")
+
+p_ebsa <- read_sf(ebsa_shp)
+
+```
+
+
 ## scenarios x layers
 
 ```{r}
