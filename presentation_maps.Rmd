@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
 ```
 
 ```{r libraries}
-library(prioritizr) # devtools::load_all("~/github/prioritizr")
+#library(prioritizr) # devtools::load_all("~/github/prioritizr")
 #library(bbnj)       # 
  # setwd(here()); devtools::install_local(force=T) 
 devtools::install_github("ecoquants/bbnj")
@@ -27,6 +27,8 @@ library(knitr)
 library(formattable)
 library(lwgeom)
 library(RColorBrewer)
+library(bbnj)
+library(ggplot2)
 area   = raster::area
 select = dplyr::select
 ```
@@ -166,18 +168,39 @@ for (i in 1:nlayers(s_features)){  #i = 8
 
 
 ```{r solution & ebsas}
-s04<-raster(here("inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol.tif"))
-ebsa_abnj<-read_sf(here("inst/scripts/data_overlays/ebsa_abnj.shp")) %>% 
+s04<-raster(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol.tif"))
+
+ebsa_hs<-read_sf(here("data_overlays/ebsa_hs.shp")) %>% 
   st_transform(54009)
-map_png <- here("inst/scripts/map_overlays/s04ebsa.png")
+
+map_png <- here("map_overlays/s04ebsa_v2.png")
+
 countries <- rnaturalearth::ne_countries(returnclass = "sf") %>%
   st_transform(54009)
-graticules <- st_graticule(countries)
-png(map_png, width=480*4, height = 480*4, res=300, type="cairo", units='px', bg = "transparent")
-plot(s04, alpha=0.8, legend=F, axes=F, box=F)
-plot(st_geometry(ebsa_abnj), add=T, col=scales::alpha("blue", .3), border="transparent")
+ graticules <- st_graticule(countries)
+
+
+col_hs <- ggplot2::alpha("lightblue", 0.3)
+col_sol <- ggplot2::alpha("darkgreen",0.7)
+col_ebsa <- ggplot2::alpha("purple", .3)
+cols <- c(col_hs, col_sol)
+
+png(map_png, width=480*4, height = 480*4, res=300, type="cairo", units='px')
+
+#plot(r_hs, legend=F, axes=F, box=F, col=col_hs)
+plot(s04, legend=F, axes=F, box=F, col=cols)
+plot(st_geometry(ebsa_hs), add=T, col=col_ebsa, border="transparent")
 plot(st_geometry(countries), add=T, col=gray(0.8), border=gray(0.7), lwd=0.5)
 plot(st_geometry(graticules), add=T, col=gray(0.6), lwd=0.5)
+
+legend(
+      "bottom",
+      legend = c("EBSA", "Solution", "ABNJ"),
+      fill = c(col_ebsa, col_sol, col_hs),
+      horiz = TRUE,
+      cex = 0.6,
+      inset =  0.18)
+
 dev.off()
 map_png %>%
   magick::image_read() %>% magick::image_trim() %>%

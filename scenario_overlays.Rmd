@@ -37,8 +37,9 @@ select = dplyr::select
 mapviewOptions(basemaps = c("Esri.OceanBasemap","Stamen.TonerLite"))
 
 dir_data  <- here("../bbnj/inst/data")
-#dir_gdata <- "~/Gdrive Ecoquants/projects/bbnj/data" # on Ben Best's laptop
+dir_gdata <- "/Volumes/GoogleDrive/My Drive/BOI- Collaboration Folders/High Seas MPAs/bbnj/data" # on MV's laptop
 #wdpa_sfx  <- "raw/WDPA/WDPA_Aug2019_marine-shapefile/WDPA_Aug2019_marine-shapefile-polygons.shp"
+ebsarank_sfx <- "raw/EBSAs/Global_EBSAs_automated_final_1104_2016_WGS84_Rankings/EBSA_rankings_crit6.shp"
 
 scenarios <- tribble(
     ~s, ~scenario,
@@ -58,7 +59,8 @@ layers <- tribble(
   ~layer, ~clip,    ~color,   ~fld_id, ~fld_name, ~raw_shp, 
   "ebsa",     T,  "purple", "EBSA_ID",    "NAME", glue("{dir_data}/ebsa.shp"),
   "ihor",     F,  "yellow",   "seaid",     "sea", glue("{dir_data}/ihor.shp"),
-  "mine",     F,     "red",      "ID",  "name", glue("{dir_data}/mine-claims.shp"))
+  "mine",     F,     "red",      "ID",    "name", glue("{dir_data}/mine-claims.shp"),
+  "ebsa_rank",T,    "pink", "EBSA_ID",    "NAME", glue("{dir_gdata}/{ebsarank_sfx}"))
  # "wdpa",     T,   "brown", "WDPA_PID",    "NAME", glue("{dir_gdata}/{wdpa_sfx}"))
 
 datatable(layers)
@@ -97,7 +99,7 @@ get_scenarios_over_layers <- function(
   
   lyrs_clip <- layers %>% filter(!exists_hs_shp)
   
-  for (layer in lyrs_clip$layer){ #layer = lyrs_clip$layer[3]
+  for (layer in lyrs_clip$layer){ layer = lyrs_clip$layer[1]
     lyr <- layers %>% filter(layer==!!layer)
 
     read_sf(lyr$raw_shp) %>%
@@ -312,6 +314,11 @@ s_l$summary %>%
 
 ```{r}
 tbl_scenario_layer(s_l, "s4", "ebsa")
+```
+
+### ebsa criteria 6 (biodiversity: high)
+```{r}
+tbl_scenario_layer(s_l, "s4", "ebsa_rank")
 ```
 
 ### ihor
