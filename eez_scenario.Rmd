@@ -71,7 +71,7 @@ eez_wb[] <- lapply(eez_wb, as.character)
 eez_wb<- eez_wb %>% 
   mutate_if(is.character, str_trim)
 
-#if (!file.exists(x_csv)){
+if (!file.exists(x_csv)){
   #data(package="bbnj")
 
   #p_eez_s05 %>% st_drop_geometry() %>% head()  
