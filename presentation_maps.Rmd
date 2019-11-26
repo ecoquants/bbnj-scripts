@@ -254,7 +254,7 @@ map_png %>%
 s04<-raster(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol.tif"))
 
 mineclaims<-read_sf(here("../bbnj/inst/data/mine-claims.shp")) %>% 
-  
+  select("name") %>% 
   st_transform(54009)
 
 map_png <- here("map_overlays/s04_mineclaims.png")
@@ -264,9 +264,9 @@ countries <- rnaturalearth::ne_countries(returnclass = "sf") %>%
  graticules <- st_graticule(countries)
 
 
-col_hs <- ggplot2::alpha("lightblue", 0.3)
-col_sol <- ggplot2::alpha("darkgreen",0.7)
-col_mine <- ggplot2::alpha("red", .3)
+col_hs <- ggplot2::alpha("lightblue", 0.5)
+col_sol <- ggplot2::alpha("darkgreen",0.5)
+col_mine <- ggplot2::alpha("red", 0.5)
 cols <- c(col_hs, col_sol)
 
 png(map_png, width=480*4, height = 480*4, res=300, type="cairo", units='px')

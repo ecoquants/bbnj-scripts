@@ -43,7 +43,7 @@ dir_out       <- here("eez_scenario")
 dir_in       <- here("extdata")
 dir_scenarios <- here("../bbnj/inst/app/www/scenarios")
 
-#list.files(dir_scenarios)
+list.files(dir_scenarios)
 scen      <- "s04a.biofish.alltime.mol50km"
 
 scen_tif  <- glue("{dir_scenarios}/{scen}_sol.tif")
@@ -51,13 +51,15 @@ x_csv     <- glue("{dir_out}/s04a_eez.csv")
 x_shp     <- glue("{dir_out}/s04a_eez.shp")
 x_sov_csv <- glue("{dir_out}/s04a_eez_sov.csv")
 x_sov_shp <- glue("{dir_out}/s04a_eez_sov.shp")
-x_ldc_csv <- glue("{dir_out}/s04a_eez_ldc.csv")
-x_ldc_shp <- glue("{dir_out}/s04a_eez_ldc.shp")
+x_lic_csv <- glue("{dir_out}/s04a_eez_lic.csv")
+x_lic_shp <- glue("{dir_out}/s04a_eez_lic.shp")
+x_hic_csv <- glue("{dir_out}/s04a_eez_hic.csv")
+x_hic_shp <- glue("{dir_out}/s04a_eez_hic.shp")
+
 q_eez_shp <- glue("{dir_out}/q_eez.shp")
 q_sol_shp <- glue("{dir_out}/q_s04a.shp")
 eezall_shp <- glue("{dir_out}/eezall.shp")
 eezsov_shp <- glue("{dir_out}/eezsov.shp")
-eezldc_shp <- glue("{dir_out}/eezldc.shp")
 
 eez_worldbank <- glue("{dir_in}/eez_worldbank.csv")
 
@@ -69,7 +71,7 @@ eez_wb[] <- lapply(eez_wb, as.character)
 eez_wb<- eez_wb %>% 
   mutate_if(is.character, str_trim)
 
-if (!file.exists(x_csv)){
+#if (!file.exists(x_csv)){
   #data(package="bbnj")
 
   #p_eez_s05 %>% st_drop_geometry() %>% head()  
@@ -124,17 +126,24 @@ if (!file.exists(x_csv)){
     summarise(
       length_km = sum(length_km))
   
-  x_ldc <- x_sov %>% 
+  x_lic <- x_sov %>% 
     left_join(.,y=eez_wb, by = c("Sovereign1" = "Entity")) %>% 
     filter(World.Bank.classification %in% c("Low income", "Lower middle income"))
+  
+  x_hic <- x_sov %>% 
+    left_join(.,y=eez_wb, by = c("Sovereign1" = "Entity")) %>% 
+    filter(World.Bank.classification %in% c("High income", "Upper middle income"))
 
   write_csv(st_drop_geometry(x), x_csv)
   write_csv(st_drop_geometry(x_sov), x_sov_csv)
-  write_csv(st_drop_geometry(x_ldc), x_ldc_csv)
+  write_csv(st_drop_geometry(x_lic), x_lic_csv)
+  write_csv(st_drop_geometry(x_hic), x_hic_csv)
+  
   
   write_sf(x, x_shp)
   write_sf(x_sov, x_sov_shp)
-  write_sf(x_ldc, x_ldc_shp)
+  write_sf(x_lic, x_lic_shp)
+  write_sf(x_hic, x_hic_shp)
   
   write_sf(p_eez_s05_mol,eezall_shp)
   write_sf(eez_sov,eezsov_shp)
@@ -142,7 +151,8 @@ if (!file.exists(x_csv)){
 
 x     <- read_sf(x_shp)
 x_sov <- read_sf(x_sov_shp)
-x_ldc <- read_sf(x_ldc_shp)
+x_lic <- read_sf(x_lic_shp)
+x_hic <- read_sf(x_hic_shp)
 q_eez <- read_sf(q_eez_shp)
 q_sol <- read_sf(q_sol_shp)
 eezall <-read_sf(eezall_shp)
@@ -188,16 +198,28 @@ Total number of sovereign EEZs globally (excluding disputed areas and joint clai
 Download: [`s04a_eez_sov.csv`](https://raw.githubusercontent.com/ecoquants/bbnj-scripts/master/eez_scenario/s04a_eez_sov.csv)
 
 ```{r}
-x_ldc %>% 
+x_lic %>% 
   st_drop_geometry() %>% 
   datatable(
     caption = "Intersection of Scenario 4a with EEZs grouped by Sovereign1 and filtered for low & lower middle income class by World Bank") %>% 
   formatRound(columns=c("lngth_k"), digits=1)
 
-x_ldc %>% 
+x_lic %>% 
   summarise(
     length_km = sum(lngth_k)) %>% 
   pull(length_km)
 ```
 
+```{r}
+x_hic %>% 
+  st_drop_geometry() %>% 
+  datatable(
+    caption = "Intersection of Scenario 4a with EEZs grouped by Sovereign1 and filtered for high & upper middle income class by World Bank") %>% 
+  formatRound(columns=c("lngth_k"), digits=1)
+
+x_hic %>% 
+  summarise(
+    length_km = sum(lngth_k)) %>% 
+  pull(length_km)
+```
 
