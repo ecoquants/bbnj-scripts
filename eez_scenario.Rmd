@@ -25,8 +25,12 @@ From `notes | bbnj`. Use same code as scenario_overlays? —> maybe no, instead 
 ```{r}
 library(glue)
 library(dplyr)
+library(tidyr)
 library(here)
+library(glue)
 library(bbnj)
+# devtools::install_github("BenioffOceanInitiative/bbnj")
+# devtools::install_local(here::here("../bbnj"))
 library(fasterize)
 library(sf)
 library(lwgeom)
@@ -37,125 +41,173 @@ library(rmapshaper)
 library(ggplot2)
 library(readr)
 library(DT)
+library(scales)
+library(rnaturalearth)
+library(rnaturalearthdata)
 
 dir_out       <- here("eez_scenario")
-dir_scenarios <- here("../bbnj/inst/app/www/scenarios")
+dir_bbnj      <- here("../bbnj")
+dir_scenarios <- file.path(dir_bbnj, "inst/app/www/scenarios")
+dir_data      <- file.path(dir_bbnj, "inst/data")
+eez_s05_shp   <- file.path(dir_data, "eez_s05.shp")
 
 #list.files(dir_scenarios)
 scen      <- "s04a.biofish.alltime.mol50km"
 
-scen_tif  <- glue("{dir_scenarios}/{scen}_sol.tif")
-x_csv     <- glue("{dir_out}/s04a_eez.csv")
-x_shp     <- glue("{dir_out}/s04a_eez.shp")
-x_sov_csv <- glue("{dir_out}/s04a_eez_sov.csv")
-x_sov_shp <- glue("{dir_out}/s04a_eez_sov.shp")
-q_eez_shp <- glue("{dir_out}/q_eez.shp")
-q_sol_shp <- glue("{dir_out}/q_s04a.shp")
+scen_tif   <- glue("{dir_scenarios}/{scen}_sol.tif")
+x_sol_shp  <- glue("{dir_out}/s04a_eez_bits.shp")
+x_csv      <- glue("{dir_out}/s04a_eez.csv")
+x_shp      <- glue("{dir_out}/s04a_eez.shp")
+x_sov_csv  <- glue("{dir_out}/s04a_eez_sov.csv")
+x_sov_shp  <- glue("{dir_out}/s04a_eez_sov.shp")
+q_abnj_shp <- glue("{dir_out}/q_abnj.shp")
+q_eez_shp  <- glue("{dir_out}/q_eez.shp")
+q_sol_shp  <- glue("{dir_out}/q_s04a.shp")
 
 r_scen <- raster(scen_tif)
 plot(r_scen, main = "r_scen")
 
-if (!file.exists(x_csv)){
-  #data(package="bbnj")
+r_pu_id <- get_d_prjres("r_pu_id", "_mol50km") # plot(r_pu_id)
+r_abnj  <- setValues(r_pu_id, 1) %>% mask(r_pu_id) # plot(r_abnj)
 
-  #p_eez_s05 %>% st_drop_geometry() %>% head()  
-  #p_eez_s05 %>% st_drop_geometry() %>% View()
-  
-  p_eez_s05_mol <- p_eez_s05 %>% 
+p_eez_s05     <- read_sf(eez_s05_shp)
+p_eez_s05_mol <- p_eez_s05 %>% 
     filter(Territory1 != "Antarctica") %>% 
     filter(Pol_type == "200NM") %>% 
-    st_transform(54009)
-  plot(p_eez_s05_mol["MRGID"])
+    st_transform(54009) # plot(p_eez_s05_mol["MRGID"])
+
+if (!file.exists(x_csv)){
+  
   r_eez_mrgid <- fasterize(p_eez_s05_mol, r_scen, field="MRGID")
   crs(r_eez_mrgid) <- crs(r_scen)
-  #compareRaster(r_eez_mrgid, r_scen)
-  #plot(r_eez_mrgid, main = "r_eez_mrgid")
-  
-   eez_sov <- p_eez_s05_mol %>%
-     group_by(Sovereign1) %>% 
-     summarise(
-      area_km2 = sum(Area_km2))
+  # compareRaster(r_eez_mrgid, r_scen)
+  # plot(r_eez_mrgid, main = "r_eez_mrgid")
   
   # q_*: polygons (p_*) that have been rasterized (r_*)
-  q_eez <- rasterToPolygons(r_eez_mrgid, dissolve=T) %>% 
-  # q_eez <- q_eez %>%
-    st_as_sf() %>%
-    rename_at(vars(1), function(x) "eez_mrgid") %>%
-    ms_dissolve(field="eez_mrgid") %>%
-    st_make_valid() %>%
-    st_buffer(0)
-  q_sol <- rasterToPolygons(r_scen, dissolve=T) %>% 
-  # q_sol <- q_sol %>%
-    st_as_sf() %>%
-    rename_at(vars(1), function(x) "scen_sol") %>%
-    ms_dissolve(field="scen_sol") %>%
-    filter(scen_sol == 1) %>%
-    st_make_valid() %>% 
-    st_buffer(0)
-  
-  write_sf(q_eez, q_eez_shp)
-  write_sf(q_sol, q_sol_shp)
-  
-  x <- st_intersection(q_eez, q_sol) %>% 
+  if (!file.exists(q_eez_shp)){
+    q_eez <- rasterToPolygons(r_eez_mrgid, dissolve=T) %>% 
+      st_as_sf() %>%
+      rename_at(vars(1), function(x) "eez_mrgid") %>%
+      ms_dissolve(field="eez_mrgid") %>%
+      st_buffer(0) %>% 
+      st_make_valid() %>% 
+      st_set_crs(54009)
+    write_sf(q_eez , q_eez_shp)
+  }
+  if (!file.exists(q_sol_shp)){
+    q_sol <- rasterToPolygons(r_scen, dissolve=T) %>% 
+      st_as_sf() %>%
+      rename_at(vars(1), function(x) "scen_sol") %>%
+      ms_dissolve(field="scen_sol") %>%
+      filter(scen_sol == 1) %>%
+      st_buffer(0) %>% 
+      st_make_valid() %>% 
+      st_set_crs(54009)
+    write_sf(q_sol , q_sol_shp)
+  }
+  if (!file.exists(q_abnj_shp)){
+    q_abnj <- rasterToPolygons(r_abnj, dissolve=T) %>% 
+      st_as_sf() %>%
+      rename_at(vars(1), function(x) "abnj_1") %>%
+      ms_dissolve(field="abnj_1") %>%
+      st_buffer(0) %>% 
+      st_make_valid() %>% 
+      st_set_crs(54009)
+    write_sf(q_abnj, q_abnj_shp)
+  }
+
+  q_abnj <- read_sf(q_abnj_shp)
+  q_eez  <- read_sf(q_eez_shp) %>% 
+    st_make_valid()
+  q_sol  <- read_sf(q_sol_shp) %>% 
+    st_make_valid()
+
+  x_sol <- st_intersection(q_eez, q_sol) %>% 
     st_collection_extract("LINESTRING") %>% 
     group_by(eez_mrgid) %>% 
     summarize(
-      length_km = sum(st_length(geometry)) %>% set_units(km)) %>% 
+      sol_length_km = sum(st_length(geometry)) %>% set_units(km))
+  
+  x_abnj <- st_intersection(q_eez, q_abnj) %>% 
+    st_collection_extract("LINESTRING") %>% 
+    group_by(eez_mrgid) %>% 
+    summarize(
+      abnj_length_km = sum(st_length(geometry)) %>% set_units(km))
+  
+  x <- x_abnj %>% 
+    left_join(
+      x_sol %>% st_drop_geometry(),
+      by = "eez_mrgid") %>% 
+    mutate(
+      sol_length_km = replace_na(sol_length_km, 0),
+      pct_length    = sol_length_km / abnj_length_km) %>% 
     left_join(
       p_eez_s05 %>% st_drop_geometry(),
       by = c("eez_mrgid" = "MRGID"))
-  
+    
   x_sov <- x %>% 
     group_by(Sovereign1) %>% 
     summarise(
-      length_km = sum(length_km))
+      sol_length_km  = sum(sol_length_km),
+      abnj_length_km = sum(abnj_length_km)) %>% 
+    mutate(
+      pct_length = sol_length_km/abnj_length_km)
 
   write_csv(st_drop_geometry(x), x_csv)
   write_csv(st_drop_geometry(x_sov), x_sov_csv)
   write_sf(x_sov, x_sov_shp)
   write_sf(x, x_shp)
+  write_sf(x_sol, x_sol_shp)
 }
-x     <- read_sf(x_shp)
-x_sov <- read_sf(x_sov_shp)
-q_eez <- read_sf(q_eez_shp)
-q_sol <- read_sf(q_sol_shp)
+d      <- read_csv(x_csv)
+d_sov  <- read_csv(x_sov_csv)
+x      <- read_sf(x_shp)
+#x_sov  <- read_sf(x_sov_shp)
+q_abnj <- read_sf(q_abnj_shp)
+q_eez  <- read_sf(q_eez_shp)
+q_sol  <- read_sf(q_sol_shp)
+x_sol  <- read_sf(x_sol_shp)
 
+cntry <- ne_countries(scale = "medium", returnclass = "sf") %>% 
+  st_transform(54009)
+
+theme_set(theme_bw())
 ggplot() + 
+  geom_sf(data = cntry , fill = "gray" , col = NA) +
+  geom_sf(data = q_abnj, fill = "blue" , col = NA, alpha=0.2) + 
+  geom_sf(data = q_sol , fill = "green", col = NA, alpha=0.3) + 
   geom_sf(
-    data = q_sol %>% mutate(scen_sol = as.factor(scen_sol)), 
-    aes(fill = scen_sol), alpha = 0.3) + 
-  #scale_fill_manual(values=c("gray", "green")) +
-  geom_sf(
-    data = q_eez %>% mutate(eez_sovid = as.factor(eez_mrgid)), 
-    aes(fill = eez_sovid)) + 
-  geom_sf(
-    data = x, col = "red") + 
-  #scale_fill_brewer(palette="Spectral") +
+    data = q_eez %>% mutate(eez_mrgid = as.factor(eez_mrgid)),
+    aes(fill = eez_mrgid), col = NA) +
+  geom_sf(data = x_sol, col = "red") + 
   theme(legend.position="none")
 
-x %>% 
-  summarise(
-    length_km = sum(length_km)) %>% 
-  pull(length_km)
-
-x %>% 
-  st_drop_geometry() %>% 
+d %>% 
   datatable(
     caption = "Intersection of Scenario 4a with individual EEZs.") %>% 
-  formatRound(columns=c("length_km"), digits=1)
+  formatPercentage(columns=c("pct_length"), digits=1) %>% 
+  formatRound(columns=c("sol_length_km","abnj_length_km"), digits=1)
 ```
-Total number of EEZs globally (excluding disputed areas and joint claims): `r nrow(p_eez_s05_mol)`
+
+* Total # EEZs (excluding disputed areas and joint claims & Antarctica): `r nrow(p_eez_s05_mol)`
+* Total # EEZs in ABNJ: `r nrow(d)`
+* Total # EEZs in ABNJ touching solution: `r d %>% filter(sol_length_km > 0) %>% nrow()`
+* Total EEZ boundary length (km) in solution / ABNJ (%): `r comma(sum(d$sol_length_km), accuracy=0.1)` / `r comma(sum(d$abnj_length_km), accuracy=0.1)` (`r percent(sum(d$sol_length_km) / sum(d$abnj_length_km), accuracy=0.1)`)
 
 Download: [`s04a_eez.csv`](https://raw.githubusercontent.com/ecoquants/bbnj-scripts/master/eez_scenario/s04a_eez.csv)
 
 ```{r}
-x_sov %>% 
-  st_drop_geometry() %>% 
+d_sov %>% 
   datatable(
     caption = "Intersection of Scenario 4a with EEZs grouped by Sovereign1.") %>% 
-  formatRound(columns=c("length_km"), digits=1)
+  formatPercentage(columns=c("pct_length"), digits=1) %>% 
+  formatRound(columns=c("sol_length_km","abnj_length_km"), digits=1)
 ```
-Total number of sovereign EEZs globally (excluding disputed areas and joint claims): `r nrow(eez_sov)`
+
+* Total number of sovereign (SOV) EEZs globally (excluding disputed areas and joint claims & Antarctica): `r length(unique(p_eez_s05_mol$Sovereign1))`
+* Total # SOV in ABNJ: `r nrow(d_sov)`
+* Total # SOV in ABNJ touching solution: `r d_sov %>% filter(sol_length_km > 0) %>% nrow()`
+* Total SOV boundary length (km) in solution / ABNJ (%): `r comma(sum(d_sov$sol_length_km), accuracy=0.1)` / `r comma(sum(d_sov$abnj_length_km), accuracy=0.1)` (`r percent(sum(d_sov$sol_length_km) / sum(d_sov$abnj_length_km), accuracy=0.1)`)
 
 Download: [`s04a_eez_sov.csv`](https://raw.githubusercontent.com/ecoquants/bbnj-scripts/master/eez_scenario/s04a_eez_sov.csv)
 
