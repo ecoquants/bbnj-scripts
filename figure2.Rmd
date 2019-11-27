@@ -41,7 +41,8 @@ features$clean <- features$clean %>%
   "phys_seamounts_gt200to800m" = "Seamounts >200-800m Summit Depth",
   "phys_seamounts_gt800m" = "Seamounts >800m Summit Depth",
   "phys_seamounts_0to200m" = "Seamounts 0-200m Summit Depth",
-  "scapes_hetero" = "Benthic Habitat Heterogeneity"
+  "scapes_hetero" = "Benthic Habitat Heterogeneity",
+  "forams" = "Foraminifera"
     ))
 
 simpleCap <- function(x) {
@@ -125,7 +126,8 @@ features2$clean <- features2$clean %>%
   "phys_seamounts_gt200to800m" = "Seamounts >200-800m",
   "phys_seamounts_gt800m" = "Seamounts >800m",
   "phys_seamounts_0to200m" = "Seamounts 0-200m",
-  "scapes_hetero" = "Benthic Heterogeneity"
+  "scapes_hetero" = "Benthic Heterogeneity",
+  "forams" = "Foraminifera"
     ))
 
 simpleCap <- function(x) {
@@ -169,7 +171,6 @@ ggplot(physfeatures,aes(x=reorder(clean,-id),y=relative_held,label=scales::perce
   theme(
     plot.margin=unit(c(1,1,1,1),"cm")
   )
-
 
 # Plot species richness by taxa (NOW) layers
 nsppfeaturesnow<-features2 %>% 

@@ -195,11 +195,96 @@ plot(st_geometry(graticules), add=T, col=gray(0.6), lwd=0.5)
 
 legend(
       "bottom",
-      legend = c("EBSA", "Solution", "ABNJ"),
+      legend = c("EBSA", "Planning Analysis Solution", "ABNJ"),
       fill = c(col_ebsa, col_sol, col_hs),
       horiz = TRUE,
       cex = 0.6,
-      inset =  0.18)
+      inset =  0.18,
+      x.intersp = 0.2)
+
+dev.off()
+map_png %>%
+  magick::image_read() %>% magick::image_trim() %>%
+  magick::image_write(map_png)
+```
+
+
+```{r solution & ebsas for criteria 6}
+s04<-raster(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol.tif"))
+
+ebsa_rank_hs<-read_sf(here("data_overlays/ebsa_rank_hs.shp")) %>% 
+  st_transform(54009)
+
+map_png <- here("map_overlays/s04ebsa_crit6.png")
+
+countries <- rnaturalearth::ne_countries(returnclass = "sf") %>%
+  st_transform(54009)
+ graticules <- st_graticule(countries)
+
+
+col_hs <- ggplot2::alpha("lightblue", 0.3)
+col_sol <- ggplot2::alpha("darkgreen",0.7)
+col_ebsa <- ggplot2::alpha("purple", .3)
+cols <- c(col_hs, col_sol)
+
+png(map_png, width=480*4, height = 480*4, res=300, type="cairo", units='px')
+
+#plot(r_hs, legend=F, axes=F, box=F, col=col_hs)
+plot(s04, legend=F, axes=F, box=F, col=cols)
+plot(st_geometry(ebsa_rank_hs), add=T, col=col_ebsa, border="transparent")
+plot(st_geometry(countries), add=T, col=gray(0.8), border=gray(0.7), lwd=0.5)
+plot(st_geometry(graticules), add=T, col=gray(0.6), lwd=0.5)
+
+legend(
+      "bottom",
+      legend = c("EBSA", "Planning Analysis Solution", "ABNJ"),
+      fill = c(col_ebsa, col_sol, col_hs),
+      horiz = TRUE,
+      cex = 0.6,
+      inset =  0.18,
+      x.intersp = 0.2)
+
+dev.off()
+map_png %>%
+  magick::image_read() %>% magick::image_trim() %>%
+  magick::image_write(map_png)
+```
+
+```{r solution & mining claims}
+s04<-raster(here("../bbnj/inst/app/www/scenarios/s04a.biofish.alltime.mol50km_sol.tif"))
+
+mineclaims<-read_sf(here("../bbnj/inst/data/mine-claims.shp")) %>% 
+  select("name") %>% 
+  st_transform(54009)
+
+map_png <- here("map_overlays/s04_mineclaims.png")
+
+countries <- rnaturalearth::ne_countries(returnclass = "sf") %>%
+  st_transform(54009)
+ graticules <- st_graticule(countries)
+
+
+col_hs <- ggplot2::alpha("lightblue", 0.5)
+col_sol <- ggplot2::alpha("darkgreen",0.5)
+col_mine <- ggplot2::alpha("red", 0.5)
+cols <- c(col_hs, col_sol)
+
+png(map_png, width=480*4, height = 480*4, res=300, type="cairo", units='px')
+
+#plot(r_hs, legend=F, axes=F, box=F, col=col_hs)
+plot(s04, legend=F, axes=F, box=F, col=cols)
+plot(st_geometry(mineclaims), add=T, col=col_mine, border="transparent")
+plot(st_geometry(countries), add=T, col=gray(0.8), border=gray(0.7), lwd=0.5)
+plot(st_geometry(graticules), add=T, col=gray(0.6), lwd=0.5)
+
+legend(
+      "bottom",
+      legend = c("ISA Mining Claims", "Planning Analysis Solution", "ABNJ"),
+      fill = c(col_mine, col_sol, col_hs),
+      horiz = TRUE,
+      cex = 0.6,
+      inset =  0.18,
+      x.intersp = 0.2)
 
 dev.off()
 map_png %>%

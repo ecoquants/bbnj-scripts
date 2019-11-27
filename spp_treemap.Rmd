@@ -114,13 +114,17 @@ ____
 
 #Create treemap where size of rectangle corresponds to number of species in each group
 
+png(filename="spp_treemap_grp02.png",width=1400, height=1000)
 taxa_treemap<- treemap(taxa_grp,
                        index=groupnumber,
                        vSize="n",
                        type="index",
                        force.print.labels = TRUE,
-                       title="Number of species per group"
+                       fontsize.labels = 28,
+                       fontfamily.labels = "sans",
+                       title=""
 )
+dev.off()
 
 #Create table of nspp for each taxonomic group
 knitr::kable(taxa_grp,
