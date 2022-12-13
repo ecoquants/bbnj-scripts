@@ -1,0 +1,83 @@
+---
+title: "Check BBNJ in Antarctica"
+execute:
+  message: false
+  warning: false
+format: 
+  html:
+    toc: true
+editor_options: 
+  chunk_output_type: console
+---
+
+## High Seas and Antarctica
+
+Antarctica was included in the High Seas for the BBNJ app analysis, however the shorelines around Antarctica are not consistently defined with the basemap layers commonly used (e.g., compare Esri.OceanBasemap vs. Stamen.Toner or Antarctica). You can see Antarctica according to [MarineRegions.org](https://marineregions.org) `World_EEZ_v10_20180221`. Uncheck the layer and you'll see the High Seas includes it.
+
+```{r}
+librarian::shelf(
+  BenioffOceanInitiative/bbnj,
+  dplyr, glue, leaflet, sf, tibble,
+  quiet = T)
+
+dir_gdata       <-  "/Users/bbest/My Drive/projects/bbnj/data"
+raw_eez_shp     <- glue("{dir_gdata}/raw/marineregions.org_boundaries/World_EEZ_v10_20180221/eez_v10.shp")
+raw_eez_iho_shp <- glue("{dir_gdata}/raw/marineregions.org_boundaries/Intersect_EEZ_IHO_v3_2018/EEZ_IHO_v3.shp")
+
+p_eez   <- read_sf(raw_eez_shp)
+eez_iho <- read_sf(raw_eez_iho_shp)
+
+p_ant <- p_eez %>%
+  filter(Territory1 == "Antarctica")
+
+leaflet() %>% 
+  addProviderTiles(
+    providers$Esri.OceanBasemap, group = "Esri.OceanBasemap") %>% 
+  addProviderTiles(
+    providers$Stamen.Toner, group = "Stamen.Toner") %>% 
+  addPolygons(
+    data  = bbnj::p_abnj, 
+    color = "green", 
+    group = "High Seas") %>% 
+  addPolygons(
+    data  = p_ant, 
+    color = "red",
+    group = "Antarctica") %>% 
+  addLayersControl(
+    baseGroups    = c("Esri.OceanBasemap", "Stamen.Toner"),
+    overlayGroups = c("High Seas", "Antarctica"),
+    options       = layersControlOptions(
+      collapsed = F))
+```
+
+## bbnj-app
+
+Here's the script where the data layers got created, starting with the [`bbnj::p_abnj`](
+https://benioffoceaninitiative.github.io/bbnj/reference/p_abnj.html):
+
+> Global area [-180,180,-90,90] with land and Exclusive Economic Zones (EEZs) clipped out using the "Intersect_EEZ_IHO_v3_2018" product from [MarineRegions.org](https://marineregions.org).
+
+- [generate.Rmd#L70-L71](https://github.com/BenioffOceanInitiative/bbnj-app/blob/99d5bc5d6577be710bf19278739bc391507ce386/generate.Rmd#L70-L71)
+  ```r
+  abnj <- bbnj::p_abnj %>% 
+    st_set_crs(4326)
+  ```
+
+## `bbnj`:`data-raw/`
+
+We can see below that before clipping out the EEZs, I excluded Antarctica, meaning that it got included into the final high seas areas.
+
+[data-raw/](https://github.com/BenioffOceanInitiative/bbnj/tree/c5e78b2e1d87ab7ad2e395220d59a25fa5527155/data-raw):
+
+- [create_data.R#L160-L162](https://github.com/BenioffOceanInitiative/bbnj/blob/c5e78b2e1d87ab7ad2e395220d59a25fa5527155/data-raw/create_data.R#L160-L162)
+  ```r
+  p_iho <- eez_iho %>%
+    filter(is.na(EEZ) | Territory1 == "Antarctica") %>%
+    select(fid, MarRegion, MRGID, IHO_Sea, IHO_MRGID, Longitude, Latitude, Area_km2)
+  ```
+
+- [create_data.R#L137-L138](https://github.com/BenioffOceanInitiative/bbnj/blob/c5e78b2e1d87ab7ad2e395220d59a25fa5527155/data-raw/create_data.R#L137-L138)
+  ```r
+  p_eez <- p_eez %>%
+    filter(Territory1 != "Antarctica")
+  ```
