@@ -1,0 +1,25 @@
+---
+title: "Polynesian Triangle Quick Assessment"
+format: html
+---
+
+## Map Triangle
+
+```{r}
+# libraries
+librarian::shelf(
+  here, mapview, sf,
+  quiet = T)
+
+# paths
+tri_shp <- "/Users/bbest/My Drive/projects/bbnj/data/polynesian-triangle_shapefile/polynesian_triangle_clipped.shp"
+
+# read
+tri <- read_sf(tri_shp)
+tri
+
+# map
+mapView(tri)
+```
+
+
