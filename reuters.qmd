@@ -1,0 +1,56 @@
+---
+title: "for_reuters"
+format: html
+---
+
+
+## Map 2
+
+```{r}
+librarian::shelf(
+  devtools, here, raster)
+load_all(here("../bbnj"))
+
+map2_tif <- "/Users/bbest/Downloads/heatmap_s02_nspp_all.tif"
+map2_png <- "/Users/bbest/Downloads/heatmap_s02_nspp_all.png"
+
+r_map2 <- raster(map2_tif)
+plot(r_map2)
+map_r2png(r_map2, map2_png)
+
+```
+
+
+## Figure 3: s2a - s4
+Biodiversity now & future - Biodiversity now & future with fishing as cost
+
+```{r}
+https://github.com/BenioffOceanInitiative/bbnj/tree/master/inst/app/www/scenarios/diffs
+
+d <- scenarios_diff(scenarios[c("s2a", "s4")], dir_scenarios, dir_diffs)
+diff_tbl(d$tbl)
+```
+
+![](`r d$png`)
+
+## Figure 4: s3 - s4
+Biodiversity now with fishing as cost - Biodiversity now & future with fishing as cost
+
+```{r}
+d <- scenarios_diff(scenarios[c("s3", "s4")], dir_scenarios, dir_diffs)
+diff_tbl(d$tbl)
+```
+
+![](`r d$png`)
+```{r}
+
+```
+
+You can add options to executable code like this 
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).

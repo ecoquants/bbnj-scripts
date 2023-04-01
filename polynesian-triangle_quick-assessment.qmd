@@ -1,25 +1,202 @@
 ---
 title: "Polynesian Triangle Quick Assessment"
 format: html
+editor_options: 
+  chunk_output_type: console
 ---
 
 ## Map Triangle
 
+* [Polynesian Triangle - Wikipedia](https://en.wikipedia.org/wiki/Polynesian_Triangle)
+
+The Polynesian Triangle is a region of the Pacific Ocean with three island groups at its corners:
+
+1. Hawai‘i
+2. Easter Island (Rapa Nui) and 
+3. New Zealand (Aotearoa).
+
 ```{r}
 # libraries
 librarian::shelf(
-  here, mapview, sf,
+  dplyr, ggplot2, glue, here, leaflet, mapview, mregions, plotly, 
+  sf, smoothr, stringr, terra, tibble,
   quiet = T)
 
-# paths
-tri_shp <- "/Users/bbest/My Drive/projects/bbnj/data/polynesian-triangle_shapefile/polynesian_triangle_clipped.shp"
+h_geo <- here("data/polynesian-triangle.geojson")
 
-# read
-tri <- read_sf(tri_shp)
-tri
 
-# map
-mapView(tri)
+# check for convex hull of Polynesian Triangle
+if (!file.exists(h_geo)){
+  # create if not present
+  
+  # paths
+  ply_shp <- "/Users/bbest/My Drive/projects/bbnj/data/polynesian-triangle_shapefile/polynesian_triangle_clipped.shp"
+  
+  eezboundaries_geoJSON <- mr_geojson(key = "MarineRegions:eez", maxFeatures = 1)
+  
+  eezs <- rbind(
+    mr_records_by_type(type = "EEZ"),
+    mr_records_by_type(type = "EEZ", offset = 101),
+    mr_records_by_type(type = "EEZ", offset = 201)) |> 
+    tibble()
+  
+  eezs$preferredGazetteerName |> 
+    #sort()
+    # str_subset("Hawaii") # "United States Exclusive Economic Zone (Hawaii)"
+    #str_subset("Zealand") # "New Zealand Exclusive Economic Zone"
+    str_subset("Easter")   # "Chilean Exclusive Economic Zone (Easter Island)"
+  
+  tri_eezs <- c(
+    "United States Exclusive Economic Zone (Hawaii)",
+    "New Zealand Exclusive Economic Zone",
+    "Chilean Exclusive Economic Zone (Easter Island)")
+  
+  mrgids <- eezs |> 
+    filter(
+      preferredGazetteerName %in% tri_eezs) |> 
+    pull(MRGID)
+    
+  f <- read_sf(glue(
+    "https://geo.vliz.be/geoserver/MarineRegions/wfs?service=WFS&version=1.0.0&request=GetFeature&typeNames=eez&cql_filter=mrgid%20in%20({paste(mrgids, collapse=',')})&outputFormat=application/json"))
+  
+  f_pdc <- f |> 
+    st_transform(3832)
+  
+  h <- h_pdc |> 
+    st_transform(4326) |> 
+    mutate(
+      geom = (geom + c(360,90)) %% c(360) - c(0,90))
+  # st_bbox(h)
+  #      xmin      ymin      xmax      ymax 
+  # 160.60983 -55.94930 258.35853  31.79787 
+  
+  g180 <- ext(c(-180, 180, -90, 90)) |> st_bbox() |> st_as_sfc()
+  # st_bbox(g180)
+  # xmin ymin xmax ymax 
+  # -180  -90  180   90 
+  
+  g360 <- ext(c(180, 360, -90, 90)) |> st_bbox() |> st_as_sfc()
+  # st_bbox(g360)
+  # xmin ymin xmax ymax 
+  #   180  -90  360   90
+  
+  h_g180 <- st_intersection(h_gcs, g180) |> 
+    st_set_crs(4326)
+  # mapView(h_g180)
+  h_g360 <- st_intersection(h_gcs, g360) |> 
+    mutate(
+      geom = (geom + c(360,-90)) %% c(-360) + c(0,90)) |> 
+    st_set_crs(4326)
+  # st_bbox(h_g360)
+  #       xmin       ymin       xmax       ymax 
+  # -180.00000  -53.01308 -101.64147   31.79787
+  
+  h <- rbind(
+    h_g180,
+    h_g360)
+  # mapView(h)
+
+  write_sf(h, h_geo)
+}
+h <- read_sf(h_geo)
+mapView(h)
+
+leaflet(
+  options = leafletOptions(
+    worldCopyJump = T)) |>
+  # add base: blue bathymetry and light brown/green topography
+  addProviderTiles(
+    "Esri.OceanBasemap",
+    options = providerTileOptions(
+      variant = "Ocean/World_Ocean_Base",
+      noWrap = F)) |>
+  # add reference: placename labels and borders
+  addProviderTiles(
+    "Esri.OceanBasemap",
+    options = providerTileOptions(
+      variant = "Ocean/World_Ocean_Reference",
+      noWrap = F)) |> 
+  addPolygons(data = h) # |> 
+  # addRasterImage(r_c)
+
+r <- rast("heatmap/heatmap_s02a_nspp_all.tif")
+
+h_mol <- h |> 
+  smoothr::densify(h, max_distance = 0.1) |> 
+  st_transform('ESRI:54009')
+plot(r)
+plot(h_mol, add=T)
+
+r_c <- crop(r, h_mol) |> 
+  mask(h_mol) |> 
+  trim()
+plot(r_c)
+plot(h_mol, add=T)
+
+d <- bind_rows(
+  tibble(
+    Region = "Global",
+    Value  = values(r, na.rm=T, mat=F)),
+  tibble(
+    Region = "Polynesian Triangle",
+    Value  = values(r_c, na.rm=T, mat=F)))
+
+mu <- d |> 
+  group_by(Region) |> 
+  summarize(
+    mean = mean(Value))
+range(d$Value)
+# 0.000000 4.951512
+
+
+group_colors <- c(
+  Global                = "gray60", 
+  `Polynesian Triangle` = "blue")
+g <- ggplot(d, aes(x=Value, fill=Region)) +
+  geom_density(alpha=0.4) + 
+  geom_vline(
+    data = mu, aes(xintercept=mean, color=Region),
+    linetype="dashed") +
+  scale_fill_manual(
+    values = group_colors) +
+  scale_color_manual(
+    values = group_colors) + 
+  # theme_light()
+  theme_minimal()
+g
+
+p <- ggplotly(g)
+p$x$data[[1]]$name <- p$x$data[[1]]$legendgroup <- "Global"
+p$x$data[[2]]$name <- p$x$data[[2]]$legendgroup <- "Polynesian Triangle"
+p
 ```
 
 
+```{r}
+#| eval: false
+b_mer <- ext(c(-179.8, 179.8, -89.8, 89.8)) |> st_bbox() |> st_as_sfc() |> st_set_crs(4326) |> st_transform(3857) |> st_bbox()
+
+g <- rast(
+  ncols=180*4, nrows=180*2, 
+  xmin=b_mer[["xmin"]], xmax=b_mer[["xmax"]], 
+  ymin=b_mer[["ymin"]], ymax=b_mer[["ymax"]], 
+  crs='EPSG:3857')
+
+r_mer <- terra::project(r, g)
+# plot(r_mer)
+mapView(r_mer)
+```
+
+
+I started in on this but need to first sort an issue with the triangle spanning the antimeridian (-180°/+180°). I think the solution will involve one or both of the following suggestions, but will have to pick this up again tomorrow:
+
+* [sf - Leaflet Shiny and polygons across the dateline - Geographic Information Systems Stack Exchange](https://gis.stackexchange.com/questions/401828/leaflet-shiny-and-polygons-across-the-dateline)
+  > `sf_data$geom <- (st_geometry(sf_data) + c(360,90)) %% c(360) - c(0,90)` this offsets the geometry values that are on the other side of the dateline to "wrap around" to become 180+ values. Then you also want to set `leafletOptions(worldCopyJump = F)` and `providerTileOptions(noWrap = T)`
+  
+* [sf::st\_transform not honoring +lon\_wrap · Issue #280 · r-spatial/sf](https://github.com/r-spatial/sf/issues/280)
+
+
+## Subset layers
+
+* [bbnj/s04a.biofish.alltime.mol50km.Rmd at master · BenioffOceanInitiative/bbnj](https://github.com/BenioffOceanInitiative/bbnj/blob/master/inst/app/www/scenarios/s04a.biofish.alltime.mol50km.Rmd)
+* [bbnj/inst/data/bio\_gmbi\_groups02\_mol50km at master · BenioffOceanInitiative/bbnj](https://github.com/BenioffOceanInitiative/bbnj/tree/master/inst/data/bio_gmbi_groups02_mol50km)
