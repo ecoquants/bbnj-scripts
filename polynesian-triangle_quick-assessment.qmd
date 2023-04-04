@@ -1,15 +1,15 @@
 ---
 title: "Polynesian Triangle Quick Assessment"
-format: html
+format:
+  html:
+    code-fold: true
 editor_options: 
   chunk_output_type: console
 ---
 
-## Map Triangle
+## Map of Polynesian ∆ & High Seas
 
-* [Polynesian Triangle - Wikipedia](https://en.wikipedia.org/wiki/Polynesian_Triangle)
-
-The Polynesian Triangle is a region of the Pacific Ocean with three island groups at its corners:
+The Polynesian Triangle ([Wikipedia](https://en.wikipedia.org/wiki/Polynesian_Triangle)) is a region of the Pacific Ocean with three island groups at its corners:
 
 1. Hawai‘i
 2. Easter Island (Rapa Nui) and 
@@ -18,12 +18,13 @@ The Polynesian Triangle is a region of the Pacific Ocean with three island group
 ```{r}
 # libraries
 librarian::shelf(
+  benioffoceaninitiative/bbnj, 
   dplyr, ggplot2, glue, here, leaflet, mapview, mregions, plotly, 
-  sf, smoothr, stringr, terra, tibble,
+  raster, RColorBrewer, readr, sf, smoothr, stringr, terra, tibble,
   quiet = T)
 
-h_geo <- here("data/polynesian-triangle.geojson")
-
+h_geo     <- here("data/polynesian-triangle.geojson")
+stats_csv <- here("data/polynesian-triangle_stats.csv")
 
 # check for convex hull of Polynesian Triangle
 if (!file.exists(h_geo)){
@@ -32,19 +33,16 @@ if (!file.exists(h_geo)){
   # paths
   ply_shp <- "/Users/bbest/My Drive/projects/bbnj/data/polynesian-triangle_shapefile/polynesian_triangle_clipped.shp"
   
-  eezboundaries_geoJSON <- mr_geojson(key = "MarineRegions:eez", maxFeatures = 1)
-  
   eezs <- rbind(
     mr_records_by_type(type = "EEZ"),
     mr_records_by_type(type = "EEZ", offset = 101),
     mr_records_by_type(type = "EEZ", offset = 201)) |> 
     tibble()
   
-  eezs$preferredGazetteerName |> 
-    #sort()
+  # eezs$preferredGazetteerName |> 
     # str_subset("Hawaii") # "United States Exclusive Economic Zone (Hawaii)"
-    #str_subset("Zealand") # "New Zealand Exclusive Economic Zone"
-    str_subset("Easter")   # "Chilean Exclusive Economic Zone (Easter Island)"
+    # str_subset("Zealand") # "New Zealand Exclusive Economic Zone"
+    # str_subset("Easter")   # "Chilean Exclusive Economic Zone (Easter Island)"
   
   tri_eezs <- c(
     "United States Exclusive Economic Zone (Hawaii)",
@@ -61,6 +59,8 @@ if (!file.exists(h_geo)){
   
   f_pdc <- f |> 
     st_transform(3832)
+  
+  h_pdc <- st_convex_hull(f_pdc)
   
   h <- h_pdc |> 
     st_transform(4326) |> 
@@ -81,8 +81,7 @@ if (!file.exists(h_geo)){
   #   180  -90  360   90
   
   h_g180 <- st_intersection(h_gcs, g180) |> 
-    st_set_crs(4326)
-  # mapView(h_g180)
+    st_set_crs(4326) # mapView(h_g180)
   h_g360 <- st_intersection(h_gcs, g360) |> 
     mutate(
       geom = (geom + c(360,-90)) %% c(-360) + c(0,90)) |> 
@@ -99,7 +98,10 @@ if (!file.exists(h_geo)){
   write_sf(h, h_geo)
 }
 h <- read_sf(h_geo)
-mapView(h)
+# mapView(h)
+
+
+p_abnj_s05 <- p_abnj_s05 |> st_set_crs(4326)
 
 leaflet(
   options = leafletOptions(
@@ -116,58 +118,278 @@ leaflet(
     options = providerTileOptions(
       variant = "Ocean/World_Ocean_Reference",
       noWrap = F)) |> 
-  addPolygons(data = h) # |> 
+  addPolygons(
+    data = h, group = "Polynesian ∆") |> 
+  addPolygons(
+    data = p_abnj_s05, 
+    color = "gray", group = "High Seas") |> 
+  addLayersControl(
+    overlayGroups = c("Polynesian ∆", "High Seas"),
+    options = layersControlOptions(collapsed = F))
   # addRasterImage(r_c)
+```
 
-r <- rast("heatmap/heatmap_s02a_nspp_all.tif")
+## Rasters
 
+```{r}
+# get stack of rasters ----
+prjres   <- "_mol50km" # prjres in: View(projections_tbl)
+dir_out  <- here("data/polynesian-triangle"); 
+
+# set rainbow color palette
+pal <- colorRampPalette(brewer.pal(11, "Spectral"))
+cols <- rev(pal(255))
+
+P <- projections_tbl %>% filter(prjres == !!prjres)
+
+# * planning unit ----
+r_pu_id <- get_d_prjres("r_pu_id", prjres) # plot(r_pu_id)
+r_pu <- setValues(r_pu_id, 1) %>% 
+  mask(r_pu_id) # plot(r_pu)
+
+# * biodiversity: now & future for nspp_all
+s_bio_now_all <- get_gmbi_grpsmdl_prjres("groups00", prjres) %>% 
+  subset("groups00_nspp_all")
+
+s_bio_future_all <- get_gmbi_grpsmdl_prjres("groups00_2100", prjres) %>% 
+  subset("groups00_2100_nspp_all")
+
+# add red list sum for all species now and future
+rls_all_now <- get_gmbi_grpsmdl_prjres("groups00", prjres) %>% 
+  subset("groups00_rls_all")
+
+rls_all_future <- get_gmbi_grpsmdl_prjres("groups00_2100", prjres) %>% 
+  subset("groups00_2100_rls_all")
+
+# * non-bio features ----
+s_seamounts <- get_d_prjres("s_phys_seamounts",prjres)
+lu_seamounts <- c(lteq200m="0to200",gt200lteq800m="gt200to800",gt800m="gt800")
+lbls_seamounts <- sprintf("phys_seamounts_%sm", lu_seamounts[names(s_seamounts)])
+seamounts_all <- sum(s_seamounts)
+
+# * stack of features ----
+s_features <- stack(
+  get_d_prjres("r_vgpm", prjres),
+  s_bio_now_all,
+  s_bio_future_all,
+  rls_all_now,
+  rls_all_future,
+  seamounts_all,
+  get_d_prjres("r_phys_vents", prjres),
+  get_d_prjres("r_phys_scapes_hetero", prjres))
+
+# * sum stack of features, aka 'heatmap' ----
+r_sum <- sum(s_features, na.rm = T) %>% 
+  mask(r_pu_id)
+s_features <- stack(s_features, r_sum)
+  
+names(s_features) <- c(
+  "bio_vgpm",
+  "bio_now_all", 
+  "bio_future_all",
+  "rls_all_now",
+  "rls_all_future",
+  "seamounts_all",
+  "phys_vents",
+  "scapes_hetero",
+  "sum")
+
+# * biodiversity: now, not 2100 ----
+s_bio_gmbi <- get_gmbi_grpsmdl_prjres("groups02", prjres)
+lyrs_bio_now <- names(s_bio_gmbi) %>%
+  setdiff(str_subset(names(s_bio_gmbi), "rli")) %>%
+  setdiff(str_subset(names(s_bio_gmbi), "rls"))
+s_bio_now <- subset(s_bio_gmbi, lyrs_bio_now)
+
+s_taxa <- s_bio_now
+names(s_taxa) <- names(s_bio_now) |> 
+  str_replace("groups02_nspp_(.*)$", "\\1")
+
+S <- stack(s_features, s_taxa)
+
+# setup map layers for plotting ----
+P$epsg <- 'ESRI:54009'
+countries <- rnaturalearth::ne_countries(returnclass = "sf") %>%
+  st_transform(P$epsg)
+graticules <- st_graticule(countries)
 h_mol <- h |> 
   smoothr::densify(h, max_distance = 0.1) |> 
   st_transform('ESRI:54009')
-plot(r)
-plot(h_mol, add=T)
 
-r_c <- crop(r, h_mol) |> 
-  mask(h_mol) |> 
-  trim()
-plot(r_c)
-plot(h_mol, add=T)
+# iterate over raster layers ----
+for (lyr in names(S)[27:length(names(S))]){ # lyr = names(S)[1]
+  
+  # setup paths to outputs
+  r_tif <- glue("{dir_out}/{lyr}.tif")
+  r_png <- glue("{dir_out}/{lyr}.png")
+  h_png <- glue("{dir_out}/{lyr}_boxplot.png")
+  
+  # read raster
+  r <- raster(S, lyr)
+  
+  # * plot map of raster layer with poly ∆ ----
+  png(r_png, width=480*4, height = 480*4, res=300, type="cairo", units='px')
+  plot(r, col = cols, legend=T, axes=F, box=F)
+  plot(st_geometry(countries), add=T, col=gray(0.8), border=gray(0.7), lwd=0.5)
+  plot(st_geometry(graticules), add=T, col=gray(0.6), lwd=0.5)
+  plot(st_geometry(h_mol), add=T, col=NA, border="purple", lwd=1)
+  dev.off()
+  
+  # trim whitespace
+  r_png %>%
+    magick::image_read() %>% 
+    magick::image_trim() %>%
+    magick::image_write(r_png)
+  
+  # * extract poly ∆ raster ----
+  r_c <- crop(r, h_mol) |> 
+    mask(h_mol)
+  
+  # * skip if no values, eg seagrasses ----
+  if (length(na.omit(raster::values(r_c))) == 0)
+    next()
+  
+  r_c <- r_c |> 
+    trim()
+  
+  # * get values and calculate stats -----
+  d_g <- raster::values(r) |> na.omit()
+  d_p <- raster::values(r_c) |> na.omit()
+  
+  mu_g <- mean(d_g)
+  mu_p <- mean(d_p)
 
-d <- bind_rows(
-  tibble(
-    Region = "Global",
-    Value  = values(r, na.rm=T, mat=F)),
-  tibble(
-    Region = "Polynesian Triangle",
-    Value  = values(r_c, na.rm=T, mat=F)))
+  w <- t.test(d_g, d_p)
+  
+  # setup text to annotate plot based on stats
+  txt_vs <- case_when(
+    (w$p.value < 0.05) & (mu_g < mu_p)  ~ "<",
+    (w$p.value < 0.05) & (mu_g > mu_p)  ~ ">",
+    T ~ "≈")
+  txt_sig <- case_when(
+    w$p.value < 0.001 ~ "***",
+    w$p.value < 0.01  ~ "**",
+    w$p.value < 0.05  ~ "*")
+  
+  # * plot boxplot -----
+  d <- bind_rows(
+    tibble(
+      Region = "Global",
+      Value  = d_g),
+    tibble(
+      Region = "Polynesian ∆",
+      Value  = d_p))
+  
+  g <- ggplot(d, aes(x=Region, y = Value, fill=Region)) + 
+    geom_boxplot(notch = T, notchwidth = 0.5) +
+    theme(legend.position="none") + 
+    annotate(
+      geom = "text",
+      x = 1.5,
+      y = mu_p,
+      label = glue("{signif(mu_g,3)} {txt_vs} {signif(mu_p, 3)}\n{txt_sig}"), 
+      size = 8)
+  
+  png(h_png, width=480*4, height = 480*4, res=300, type="cairo", units='px')
+  print(g)
+  dev.off()
+      
+  d_stats <- tibble(
+    layer       = lyr,
+    avg_global  = mu_g,
+    avg_polytri = mu_p,
+    pval_isdiff = w$p.value)
+  
+  if (!file.exists(stats_csv)){
+    write_csv(d_stats, stats_csv)
+  } else {
+    read_csv(stats_csv, show_col_types = F) |> 
+      filter(layer != lyr) |> 
+      bind_rows(
+        d_stats) |> 
+      write_csv(stats_csv)
+  }
+}
+```
 
-mu <- d |> 
-  group_by(Region) |> 
-  summarize(
-    mean = mean(Value))
-range(d$Value)
-# 0.000000 4.951512
 
 
-group_colors <- c(
-  Global                = "gray60", 
-  `Polynesian Triangle` = "blue")
-g <- ggplot(d, aes(x=Value, fill=Region)) +
-  geom_density(alpha=0.4) + 
-  geom_vline(
-    data = mu, aes(xintercept=mean, color=Region),
-    linetype="dashed") +
-  scale_fill_manual(
-    values = group_colors) +
-  scale_color_manual(
-    values = group_colors) + 
-  # theme_light()
-  theme_minimal()
-g
+## Heatmap
+
+```{r}
+r <- rast("heatmap/heatmap_s02a_nspp_all.tif")
+
+
 
 p <- ggplotly(g)
-p$x$data[[1]]$name <- p$x$data[[1]]$legendgroup <- "Global"
-p$x$data[[2]]$name <- p$x$data[[2]]$legendgroup <- "Polynesian Triangle"
+p
+
+# are these statistically different?
+# t.test(d_g, d_p)
+# 	Welch Two Sample t-test
+# 
+# data:  d_g and d_p
+# t = -26.496, df = 16088, p-value < 2.2e-16
+# alternative hypothesis: true difference in means is not equal to 0
+# 95 percent confidence interval:
+#  -0.07769079 -0.06698797
+# sample estimates:
+# mean of x mean of y 
+# 0.9509344 1.0232738 
+w <- t.test(d_g, d_p)
+# By default, if var.equal is FALSE then the variance is estimated separately for both groups and the Welch modification to the degrees of freedom is used.
+
+
+# [Preliminary Testing: The devil of statistics?](https://reinventionjournal.org/index.php/reinvention/article/download/339/415?inline=1#:~:text=Two%2Dstep%20test%20procedure%20with%20both%20equal%20variance%20and%20normality%20preliminary%20tests)
+                                                  
+w <- wilcox.test(d_g, d_p) # aka 'Mann-Whitney' test
+#a Wilcoxon rank sum test (equivalent to the Mann-Whitney test: see the Note) is carried out. In this case, the null hypothesis is that the distributions of x and y differ by a location shift of mu and the alternative is that they differ by some other location shift (and the one-sided alternative "greater" is that x is shifted to the right of y).
+names(w)
+w$p.value
+# w$p.value # 1.860199e-151
+
+
+f <- var.test(Value ~ Region, d, alternative = "two.sided")
+names(f$statistic)
+
+var_eq <- f$p.value > 0.05
+
+shapiro.test(d_g)
+
+# ![](https://reinventionjournal.org/index.php/reinvention/article/download/339/415/2114)
+
+
+
+# Welch's test assumes normality but not equal variances. The Mann-Whitney test assumes equal variances but not normality.
+
+mu_g <- mean(d_g)
+mu_p <- mean(d_p)
+txt_vs <- case_when(
+  (w$p.value < 0.05) & (mu_g < mu_p)  ~ "<",
+  (w$p.value < 0.05) & (mu_g > mu_p)  ~ ">",
+  T ~ "≈")
+txt_sig <- case_when(
+  w$p.value < 0.05  ~ "*",
+  w$p.value < 0.01  ~ "**",
+  w$p.value < 0.001 ~ "***")
+
+col_g <- "gray"
+col_p <- "blue"
+p <- plot_ly(
+  colors = c(col_g, col_p),
+  type = "box", notched=T) |> 
+  add_trace(
+    y = d_g, name = "Global", color = I(col_g)) |> 
+  add_trace(
+    y = d_p, name = "Polynesian ∆", color = I(col_p)) |> 
+  layout(
+    showlegend  = F,
+    annotations = list(
+      x = 0.5,
+      y = mean(d_p),
+      text = glue("{signif(mu_g,3)} < {signif(mu_p, 3)}\n{txt_sig}"), 
+      font = list(size = 16),
+      showarrow = F))
 p
 ```
 
@@ -188,15 +410,17 @@ mapView(r_mer)
 ```
 
 
-I started in on this but need to first sort an issue with the triangle spanning the antimeridian (-180°/+180°). I think the solution will involve one or both of the following suggestions, but will have to pick this up again tomorrow:
-
-* [sf - Leaflet Shiny and polygons across the dateline - Geographic Information Systems Stack Exchange](https://gis.stackexchange.com/questions/401828/leaflet-shiny-and-polygons-across-the-dateline)
-  > `sf_data$geom <- (st_geometry(sf_data) + c(360,90)) %% c(360) - c(0,90)` this offsets the geometry values that are on the other side of the dateline to "wrap around" to become 180+ values. Then you also want to set `leafletOptions(worldCopyJump = F)` and `providerTileOptions(noWrap = T)`
-  
-* [sf::st\_transform not honoring +lon\_wrap · Issue #280 · r-spatial/sf](https://github.com/r-spatial/sf/issues/280)
-
-
 ## Subset layers
 
 * [bbnj/s04a.biofish.alltime.mol50km.Rmd at master · BenioffOceanInitiative/bbnj](https://github.com/BenioffOceanInitiative/bbnj/blob/master/inst/app/www/scenarios/s04a.biofish.alltime.mol50km.Rmd)
 * [bbnj/inst/data/bio\_gmbi\_groups02\_mol50km at master · BenioffOceanInitiative/bbnj](https://github.com/BenioffOceanInitiative/bbnj/tree/master/inst/data/bio_gmbi_groups02_mol50km)
+
+
+::: {.callout-note  collapse="true"} Statistical Aside
+
+In order to answer the question, are the values significantly different, ie larger or smaller, than the Global, I used a Welchs' t-test, which does not assume equal variance between groups but does assume normal distribution. There are some other approaches to solving this.
+
+![](https://reinventionjournal.org/index.php/reinvention/article/download/339/415/2114)
+Figure 1 from [Preliminary Testing: The devil of statistics?](https://reinventionjournal.org/index.php/reinvention/article/download/339/415?inline=1#:~:text=Two%2Dstep%20test%20procedure%20with%20both%20equal%20variance%20and%20normality%20preliminary%20tests) describing a more thorough approach.
+
+:::
