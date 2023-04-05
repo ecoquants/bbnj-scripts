@@ -205,7 +205,8 @@ h_mol <- h |>
   st_transform('ESRI:54009')
 
 # iterate over raster layers ----
-do_figs <- F
+do_map <- F
+do_box <- T
 for (i in 1:nlayers(S)){ # i = 1
   
   lyr <- names(S)[i]
@@ -219,7 +220,7 @@ for (i in 1:nlayers(S)){ # i = 1
   r <- raster(S, lyr)
   
   # * plot map of raster layer with poly ∆ ----
-  if (do_figs){
+  if (do_map){
     png(r_png, width=480*4, height = 480*4, res=300, type="cairo", units='px')
     plot(r, col = cols, legend=T, axes=F, box=F)
     plot(st_geometry(countries), add=T, col=gray(0.8), border=gray(0.7), lwd=0.5)
@@ -235,29 +236,33 @@ for (i in 1:nlayers(S)){ # i = 1
   }
   
   # * extract poly ∆ raster ----
-  r_c <- crop(r, h_mol) |> 
-    mask(h_mol)
-  
-  # * skip if no values, eg seagrasses ----
-  if (length(na.omit(raster::values(r_c))) == 0)
+  r_p <- crop(r, h_mol) |> 
+    mask(h_mol)  # plot(r_c)
+
+    # * skip if no values, eg seagrasses ----
+  if (length(na.omit(raster::values(r_p))) == 0)
     next()
   
-  r_c <- r_c |> 
-    trim()
-  
+  r_p <- r_p |> 
+    trim()       # plot(r_p)
+  r_o <- mask(r, h_mol, inverse = T) |> 
+    trim()       # plot(r_o)
+
   # * get values and calculate stats -----
-  d_g <- raster::values(r) |> na.omit()
-  d_p <- raster::values(r_c) |> na.omit()
+  v_g <- raster::values(r) |> na.omit()
+  v_p <- raster::values(r_p) |> na.omit()
+  v_o <- raster::values(r_o) |> na.omit()
   
-  mu_g <- mean(d_g)
-  mu_p <- mean(d_p)
-  dif_mu_sd <- (mu_p - mu_g) / sd(d_g)
-  w <- t.test(d_g, d_p)
+  avg_g <- mean(v_g)
+  avg_o <- mean(v_o)
+  avg_p <- mean(v_p)
+  dif_avg_sd <- (avg_p - avg_o) / sd(v_o)
+  w <- t.test(v_p, v_o)
   
   # setup text to annotate plot based on stats
   txt_vs <- case_when(
-    (w$p.value < 0.05) & (mu_g < mu_p)  ~ "<",
-    (w$p.value < 0.05) & (mu_g > mu_p)  ~ ">",
+    (w$p.value < 0.05) & (avg_o < avg_p)  ~ "<",
+    (w$p.value < 0.05) & (avg_o > avg_p)  ~ ">",
     T ~ "≈")
   txt_sig <- case_when(
     w$p.value < 0.001 ~ "***",
@@ -265,14 +270,14 @@ for (i in 1:nlayers(S)){ # i = 1
     w$p.value < 0.05  ~ "*")
   
   # * plot boxplot -----
-  if (do_figs){
+  if (do_box){
     d <- bind_rows(
       tibble(
-        Region = "Global",
-        Value  = d_g),
+        Region = "Other High Seas",
+        Value  = v_o),
       tibble(
         Region = "Polynesian ∆",
-        Value  = d_p))
+        Value  = v_p))
     
     g <- ggplot(d, aes(x=Region, y = Value, fill=Region)) + 
       geom_boxplot(notch = T, notchwidth = 0.5) +
@@ -280,8 +285,8 @@ for (i in 1:nlayers(S)){ # i = 1
       annotate(
         geom = "text",
         x = 1.5,
-        y = mu_p,
-        label = glue("{signif(mu_g,3)} {txt_vs} {signif(mu_p, 3)}\n{txt_sig}"), 
+        y = avg_p,
+        label = glue("{signif(avg_o, 3)} {txt_vs} {signif(avg_p,3)} \n{txt_sig}"), 
         size = 8)
     
     png(h_png, width=480*4, height = 480*4, res=300, type="cairo", units='px')
@@ -292,9 +297,10 @@ for (i in 1:nlayers(S)){ # i = 1
   d_stats <- tibble(
     category    = lyr_categories[i],
     layer       = lyr,
-    avg_global  = mu_g,
-    avg_polytri = mu_p,
-    dif_mu_sd   = dif_mu_sd,
+    avg_global  = avg_g,
+    avg_polytri = avg_p,
+    avg_other   = avg_o,
+    dif_avg_sd  = dif_avg_sd,
     dif_pval    = w$p.value)
   
   if (!file.exists(stats_csv)){
@@ -347,15 +353,16 @@ leaflet(
 d <- read_csv(stats_csv) |> 
   mutate(
     is_significant = dif_pval < 0.05) |> 
-  arrange(category, desc(is_significant), desc(dif_mu_sd))
+  arrange(category, desc(is_significant), desc(dif_avg_sd))
+# View(d)
 d |> 
-  select(category, layer, is_significant, dif_mu_sd, avg_global, avg_polytri, dif_pval) |> 
+  select(category, layer, is_significant, dif_avg_sd, avg_polytri, avg_other, avg_global, dif_pval) |> 
   datatable() |>
   formatRound(columns=c(
-    'dif_mu_sd', 'avg_global', 'avg_polytri', 'dif_pval'), digits=3)
+    'dif_avg_sd', 'avg_global', 'avg_polytri', 'dif_pval'), digits=3)
 ```
 
-This table describes overall results ordered by `category`, `is_significant` (p-value from Welch's t-test < 0.05), and `dif_mu_sd`. The `dif_mu_sd` represents the difference between averages ($\mu_{polynesia}$ - $\mu_{global}$) divided by the Global standard deviation ($sd_{global}$), so the magnitude of the difference.
+This table describes overall results ordered by `category`, `is_significant` (p-value from Welch's t-test `dif_pval` < 0.05), and `dif_avg_sd`. The `dif_avg_sd` represents the difference between averages ($\mu_{polynesia}$ - $\mu_{other}$) divided by the standard deviation ($sd_{other}$), so the magnitude of the difference between inside the Polynesian Triangle and outside it.
 
 ::: {.callout-note collapse="true"}
 
@@ -492,11 +499,11 @@ shapiro.test(d_g)
 #| echo: false
 #| eval: false
 
-mu_g <- mean(d_g)
-mu_p <- mean(d_p)
+avg_g <- mean(d_g)
+avg_p <- mean(d_p)
 txt_vs <- case_when(
-  (w$p.value < 0.05) & (mu_g < mu_p)  ~ "<",
-  (w$p.value < 0.05) & (mu_g > mu_p)  ~ ">",
+  (w$p.value < 0.05) & (avg_g < avg_p)  ~ "<",
+  (w$p.value < 0.05) & (avg_g > avg_p)  ~ ">",
   T ~ "≈")
 txt_sig <- case_when(
   w$p.value < 0.05  ~ "*",
@@ -517,7 +524,7 @@ p <- plot_ly(
     annotations = list(
       x = 0.5,
       y = mean(d_p),
-      text = glue("{signif(mu_g,3)} < {signif(mu_p, 3)}\n{txt_sig}"), 
+      text = glue("{signif(avg_g,3)} < {signif(avg_p, 3)}\n{txt_sig}"), 
       font = list(size = 16),
       showarrow = F))
 p
