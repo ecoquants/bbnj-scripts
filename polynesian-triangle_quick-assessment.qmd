@@ -347,7 +347,7 @@ d <- read_csv(stats_csv) |>
     is_significant = dif_pval < 0.05) |> 
   arrange(category, desc(is_significant), desc(dif_mu_sd))
 d |> 
-  select(category, layer, dif_mu_sd, is_significant, avg_global, avg_polytri, dif_pval) |> 
+  select(category, layer, is_significant, dif_mu_sd, avg_global, avg_polytri, dif_pval) |> 
   datatable() |>
   formatRound(columns=c(
     'dif_mu_sd', 'avg_global', 'avg_polytri', 'dif_pval'), digits=3)
