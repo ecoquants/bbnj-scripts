@@ -1,8 +1,11 @@
 ---
 title: "Polynesian Triangle Quick Assessment"
+execute:
+  echo: false
 format:
   html:
-    code-fold: true
+    code-tools:
+      source: https://github.com/BenioffOceanInitiative/bbnj-scripts/blob/master/polynesian-triangle_quick-assessment.qmd
 editor_options: 
   chunk_output_type: console
 ---
@@ -332,7 +335,8 @@ leaflet(
     color = "gray", group = "High Seas") |> 
   addLayersControl(
     overlayGroups = c("Polynesian ∆", "High Seas"),
-    options = layersControlOptions(collapsed = F))
+    options = layersControlOptions(collapsed = F)) |> 
+  setView(0, 0, 1)
 ```
 
 ## Overview
@@ -350,6 +354,17 @@ d |>
 ```
 
 This table describes overall results ordered by `category`, `is_significant` (p-value from Welch's t-test < 0.05), and `dif_mu_sd`. The `dif_mu_sd` represents the difference between averages ($\mu_{polynesia}$ - $\mu_{global}$) divided by the Global standard deviation ($sd_{global}$), so the magnitude of the difference.
+
+::: {.callout-note collapse="true"}
+
+### Statistical Aside
+
+In order to answer the question, are the averages between Global and Polynesian Triangle significantly different (i.e. reject the null hypothesis that the mean value is shared between the two sets of values), I used a Welchs' t-test, which does not assume equal variance between groups but does assume normal distribution. There are some other approaches to solving this.
+
+![](https://reinventionjournal.org/index.php/reinvention/article/download/339/415/2114)
+Figure 1 from [Preliminary Testing: The devil of statistics?](https://reinventionjournal.org/index.php/reinvention/article/download/339/415?inline=1#:~:text=Two%2Dstep%20test%20procedure%20with%20both%20equal%20variance%20and%20normality%20preliminary%20tests) describing a more thorough approach.
+
+:::
 
 ## Broad Layers
 
@@ -432,19 +447,6 @@ for(i in 1:nrow(d_taxa)) { # i = 1
   
 }
 ```
-:::
-
-
-
-::: {.callout-note collapse="true"}
-
-## Statistical Aside
-
-In order to answer the question, are the averages between Global and Polynesian Triangle significantly different (i.e. reject the null hypothesis that the mean value is shared between the two sets of values), I used a Welchs' t-test, which does not assume equal variance between groups but does assume normal distribution. There are some other approaches to solving this.
-
-![](https://reinventionjournal.org/index.php/reinvention/article/download/339/415/2114)
-Figure 1 from [Preliminary Testing: The devil of statistics?](https://reinventionjournal.org/index.php/reinvention/article/download/339/415?inline=1#:~:text=Two%2Dstep%20test%20procedure%20with%20both%20equal%20variance%20and%20normality%20preliminary%20tests) describing a more thorough approach.
-
 :::
 
 ```{r stats_notes}
