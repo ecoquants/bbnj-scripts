@@ -349,7 +349,7 @@ d |>
     'dif_mu_sd', 'avg_global', 'avg_polytri', 'dif_pval'), digits=3)
 ```
 
-This table describes overall results ordered by `category`, `dif_mu_sd` and `is_significant`. The `dif_mu_sd` represents the difference between averages ($\mu_{polynesia}$ - $\mu_{global}$) divided by the Global standard deviation ($sd_{global}$).
+This table describes overall results ordered by `category`, `is_significant` (p-value from Welch's t-test < 0.05), and `dif_mu_sd`. The `dif_mu_sd` represents the difference between averages ($\mu_{polynesia}$ - $\mu_{global}$) divided by the Global standard deviation ($sd_{global}$), so the magnitude of the difference.
 
 ## Broad Layers
 
