@@ -6,6 +6,8 @@ format:
   html:
     code-tools:
       source: https://github.com/BenioffOceanInitiative/bbnj-scripts/blob/master/polynesian-triangle_quick-assessment.qmd
+    toc: true
+    toc-depth: 3
 editor_options: 
   chunk_output_type: console
 ---
